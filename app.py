@@ -5,7 +5,7 @@ import sqlite3
 app = Flask(__name__)
 CORS(app)
 
-# ---------------- DATABASE ----------------
+# ---------------- DB ----------------
 def get_db():
     conn = sqlite3.connect("ecommerce.db")
     conn.row_factory = sqlite3.Row
@@ -46,7 +46,6 @@ def init_db():
     )
     """)
 
-    # sample data only first time
     cursor.execute("SELECT COUNT(*) FROM Products")
     if cursor.fetchone()[0] == 0:
         cursor.executemany("""
@@ -70,15 +69,24 @@ def products():
     data = cursor.fetchall()
     conn.close()
 
-    return jsonify([
-        {
-            "id": row["id"],
-            "name": row["name"],
-            "description": row["description"],
-            "price": row["price"]
-        }
-        for row in data
-    ])
+    return jsonify([dict(row) for row in data])
+
+# ---------------- ADD PRODUCT (ADMIN) ----------------
+@app.route("/api/add_product", methods=["POST"])
+def add_product():
+    data = request.json
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO Products (name, description, price)
+        VALUES (?, ?, ?)
+    """, (data["name"], data["description"], data["price"]))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "Product added successfully"})
 
 # ---------------- ADD TO CART ----------------
 @app.route("/api/cart", methods=["POST"])
@@ -106,16 +114,9 @@ def get_cart():
     data = cursor.fetchall()
     conn.close()
 
-    return jsonify([
-        {
-            "id": row["id"],
-            "product_name": row["product_name"],
-            "quantity": row["quantity"]
-        }
-        for row in data
-    ])
+    return jsonify([dict(row) for row in data])
 
-# ---------------- DELETE CART ITEM ----------------
+# ---------------- DELETE CART ----------------
 @app.route("/api/cart/delete", methods=["POST"])
 def delete_cart():
     data = request.json
@@ -136,9 +137,9 @@ def checkout():
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM Cart")
-    cart_items = cursor.fetchall()
+    items = cursor.fetchall()
 
-    for item in cart_items:
+    for item in items:
         cursor.execute("""
             INSERT INTO Orders (product_name, quantity)
             VALUES (?, ?)

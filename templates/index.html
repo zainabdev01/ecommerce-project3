@@ -18,9 +18,20 @@
 
 <button onclick="checkout()">🧾 Checkout</button>
 
+<hr>
+
+<!-- ADMIN PANEL -->
+<h2>🔐 Admin Panel (Add Product)</h2>
+
+<input id="pname" placeholder="Product Name"><br><br>
+<input id="pdesc" placeholder="Description"><br><br>
+<input id="pprice" placeholder="Price"><br><br>
+
+<button onclick="addProduct()">➕ Add Product</button>
+
 <script>
 
-// ---------------- PRODUCTS ----------------
+// ---------------- LOAD PRODUCTS ----------------
 fetch("/api/products")
 .then(res => res.json())
 .then(data => {
@@ -101,6 +112,24 @@ function checkout(){
     .then(data => {
         alert(data.message);
         loadCart();
+    });
+}
+
+// ---------------- ADD PRODUCT (ADMIN) ----------------
+function addProduct(){
+    fetch("/api/add_product", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            name: document.getElementById("pname").value,
+            description: document.getElementById("pdesc").value,
+            price: document.getElementById("pprice").value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        location.reload();
     });
 }
 
