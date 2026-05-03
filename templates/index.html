@@ -5,40 +5,7 @@
 </head>
 <body>
 
-<h1>🛒 Ecommerce Store</h1>
-
-<div id="products"></div>
-
-<script>
-fetch("/api/products")
-.then(res => res.json())
-.then(data => {
-    let html = "";
-
-    data.forEach(p => {
-        html += `
-            <div style="border:1px solid black; padding:10px; margin:10px;">
-                <h3>${p.name}</h3>
-                <p>${p.description}</p>
-                <p><b>Rs ${p.price}</b></p>
-                <button onclick="addToCart('${p.name}')">Add to Cart</button>
-            </div>
-        `;
-    });
-
-    document.getElementById("products").innerHTML = html;
-});
-
-function addToCart(name){
-    fetch("/api/cart", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({name:name})
-    })
-    .then(res => res.json())
-    .then(data => alert(data.message));
-}
-</script>
+<h1>🛒 Ecommerce Store Running Successfully</h1>
 
 </body>
 </html>
