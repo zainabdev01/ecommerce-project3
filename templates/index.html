@@ -1,15 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Ecommerce</title>
+    <title>Ecommerce Store</title>
 </head>
 <body>
 
 <h1>🛒 Ecommerce Store</h1>
 
+<!-- PRODUCTS -->
 <div id="products"></div>
 
+<hr>
+
+<!-- CART -->
+<h2>🛒 My Cart</h2>
+<div id="cart"></div>
+
 <script>
+
+// ---------------- PRODUCTS ----------------
 fetch("/api/products")
 .then(res => res.json())
 .then(data => {
@@ -29,6 +38,7 @@ fetch("/api/products")
     document.getElementById("products").innerHTML = html;
 });
 
+// ---------------- ADD TO CART ----------------
 function addToCart(name){
     fetch("/api/cart", {
         method: "POST",
@@ -36,8 +46,34 @@ function addToCart(name){
         body: JSON.stringify({name:name})
     })
     .then(res => res.json())
-    .then(data => alert(data.message));
+    .then(data => {
+        alert(data.message);
+        loadCart();
+    });
 }
+
+// ---------------- LOAD CART ----------------
+function loadCart(){
+    fetch("/api/cart")
+    .then(res => res.json())
+    .then(data => {
+        let html = "";
+
+        if(data.length === 0){
+            html = "<p>Cart is empty</p>";
+        } else {
+            data.forEach(c => {
+                html += `<p>🛍 ${c.product_name} (Qty: ${c.quantity})</p>`;
+            });
+        }
+
+        document.getElementById("cart").innerHTML = html;
+    });
+}
+
+// initial cart load
+loadCart();
+
 </script>
 
 </body>
