@@ -67,8 +67,7 @@ def login():
 
     if data["username"] == "admin" and data["password"] == "1234":
         return jsonify({"success": True, "message": "Login successful"})
-    else:
-        return jsonify({"success": False, "message": "Invalid credentials"})
+    return jsonify({"success": False, "message": "Invalid credentials"})
 
 # ---------------- LOGOUT ----------------
 @app.route("/api/logout", methods=["POST"])
@@ -83,7 +82,6 @@ def products():
     cursor.execute("SELECT * FROM Products")
     data = cursor.fetchall()
     conn.close()
-
     return jsonify([dict(row) for row in data])
 
 # ---------------- ADD PRODUCT ----------------
@@ -100,7 +98,6 @@ def add_product():
 
     conn.commit()
     conn.close()
-
     return jsonify({"message": "Product added successfully"})
 
 # ---------------- CART ----------------
@@ -117,7 +114,6 @@ def add_cart():
 
     conn.commit()
     conn.close()
-
     return jsonify({"message": "Added to cart"})
 
 @app.route("/api/cart", methods=["GET"])
@@ -127,7 +123,6 @@ def get_cart():
     cursor.execute("SELECT * FROM Cart")
     data = cursor.fetchall()
     conn.close()
-
     return jsonify([dict(row) for row in data])
 
 @app.route("/api/cart/delete", methods=["POST"])
@@ -140,7 +135,6 @@ def delete_cart():
 
     conn.commit()
     conn.close()
-
     return jsonify({"message": "Item removed"})
 
 # ---------------- CHECKOUT ----------------
@@ -162,8 +156,17 @@ def checkout():
 
     conn.commit()
     conn.close()
-
     return jsonify({"message": "Order placed successfully"})
+
+# ---------------- ORDERS ----------------
+@app.route("/api/orders")
+def orders():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM Orders")
+    data = cursor.fetchall()
+    conn.close()
+    return jsonify([dict(row) for row in data])
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":

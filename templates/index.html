@@ -8,11 +8,9 @@
 <h1>🛒 Ecommerce Store</h1>
 
 <!-- LOGIN -->
-<h2>🔐 Login (Admin Only)</h2>
-
+<h2>🔐 Login</h2>
 <input id="user" placeholder="Username"><br><br>
 <input id="pass" type="password" placeholder="Password"><br><br>
-
 <button onclick="login()">Login</button>
 <p id="loginMsg"></p>
 
@@ -24,17 +22,22 @@
 <hr>
 
 <!-- CART -->
-<h2>🛒 My Cart</h2>
+<h2>🛒 Cart</h2>
 <div id="cart"></div>
-
 <button onclick="checkout()">🧾 Checkout</button>
 
 <hr>
 
-<!-- ADMIN PANEL -->
-<div id="adminPanel" style="display:none;">
+<!-- ORDERS -->
+<h2>📦 Order History</h2>
+<div id="orders"></div>
+<button onclick="loadOrders()">Load Orders</button>
 
-<h2>🔐 Admin Panel (Add Product)</h2>
+<hr>
+
+<!-- ADMIN -->
+<div id="adminPanel" style="display:none;">
+<h2>🔐 Admin Panel</h2>
 
 <input id="pname" placeholder="Product Name"><br><br>
 <input id="pdesc" placeholder="Description"><br><br>
@@ -44,7 +47,6 @@
 
 <br><br>
 <button onclick="logout()">🚪 Logout</button>
-
 </div>
 
 <script>
@@ -55,124 +57,123 @@ function login(){
         method: "POST",
         headers: {"Content-Type":"application/json"},
         body: JSON.stringify({
-            username: document.getElementById("user").value,
-            password: document.getElementById("pass").value
+            username: user.value,
+            password: pass.value
         })
     })
-    .then(res => res.json())
-    .then(data => {
-        document.getElementById("loginMsg").innerText = data.message;
-
-        if(data.success){
-            document.getElementById("adminPanel").style.display = "block";
+    .then(r=>r.json())
+    .then(d=>{
+        loginMsg.innerText = d.message;
+        if(d.success){
+            adminPanel.style.display = "block";
         }
     });
 }
 
 // ---------------- LOGOUT ----------------
 function logout(){
-    fetch("/api/logout", {method:"POST"})
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-        document.getElementById("adminPanel").style.display = "none";
+    fetch("/api/logout",{method:"POST"})
+    .then(r=>r.json())
+    .then(d=>{
+        alert(d.message);
+        adminPanel.style.display="none";
     });
 }
 
 // ---------------- PRODUCTS ----------------
 fetch("/api/products")
-.then(res => res.json())
-.then(data => {
-    let html = "";
-
-    data.forEach(p => {
-        html += `
-            <div style="border:1px solid #ccc; padding:10px; margin:10px;">
-                <h3>${p.name}</h3>
-                <p>${p.description}</p>
-                <p><b>Rs ${p.price}</b></p>
-                <button onclick="addToCart('${p.name}')">Add to Cart</button>
-            </div>
-        `;
+.then(r=>r.json())
+.then(data=>{
+    let html="";
+    data.forEach(p=>{
+        html+=`
+        <div style="border:1px solid #ccc; margin:10px; padding:10px;">
+            <h3>${p.name}</h3>
+            <p>${p.description}</p>
+            <b>Rs ${p.price}</b>
+            <button onclick="addToCart('${p.name}')">Add</button>
+        </div>`;
     });
-
-    document.getElementById("products").innerHTML = html;
+    products.innerHTML=html;
 });
 
 // ---------------- CART ----------------
 function addToCart(name){
-    fetch("/api/cart", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({name:name})
+    fetch("/api/cart",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({name})
     })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
+    .then(r=>r.json())
+    .then(d=>{
+        alert(d.message);
         loadCart();
     });
 }
 
 function loadCart(){
     fetch("/api/cart")
-    .then(res => res.json())
-    .then(data => {
-        let html = "";
-
-        if(data.length === 0){
-            html = "<p>Cart is empty</p>";
-        } else {
-            data.forEach(c => {
-                html += `
-                    <p>
-                        🛍 ${c.product_name} (Qty: ${c.quantity})
-                        <button onclick="removeItem(${c.id})">❌</button>
-                    </p>
-                `;
-            });
-        }
-
-        document.getElementById("cart").innerHTML = html;
+    .then(r=>r.json())
+    .then(data=>{
+        let html="";
+        data.forEach(c=>{
+            html+=`<p>🛍 ${c.product_name} (Qty:${c.quantity})
+            <button onclick="removeItem(${c.id})">❌</button></p>`;
+        });
+        cart.innerHTML=html;
     });
 }
 
 function removeItem(id){
-    fetch("/api/cart/delete", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({id:id})
+    fetch("/api/cart/delete",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({id})
     })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
+    .then(r=>r.json())
+    .then(d=>{
+        alert(d.message);
         loadCart();
     });
 }
 
 // ---------------- CHECKOUT ----------------
 function checkout(){
-    fetch("/api/checkout", {method:"POST"})
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
+    fetch("/api/checkout",{method:"POST"})
+    .then(r=>r.json())
+    .then(d=>{
+        alert(d.message);
         loadCart();
+    });
+}
+
+// ---------------- ORDERS ----------------
+function loadOrders(){
+    fetch("/api/orders")
+    .then(r=>r.json())
+    .then(data=>{
+        let html="";
+        data.forEach(o=>{
+            html+=`<p>📦 ${o.product_name} (Qty:${o.quantity})</p>`;
+        });
+        orders.innerHTML=html;
     });
 }
 
 // ---------------- ADD PRODUCT ----------------
 function addProduct(){
-    fetch("/api/add_product", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-            name: document.getElementById("pname").value,
-            description: document.getElementById("pdesc").value,
-            price: document.getElementById("pprice").value
+    fetch("/api/add_product",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            name:pname.value,
+            description:pdesc.value,
+            price:pprice.value
         })
     })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
+    .then(r=>r.json())
+    .then(d=>{
+        alert(d.message);
         location.reload();
     });
 }
