@@ -64,7 +64,6 @@ def init_db():
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.json
-
     if data["username"] == "admin" and data["password"] == "1234":
         return jsonify({"success": True, "message": "Login successful"})
     return jsonify({"success": False, "message": "Invalid credentials"})

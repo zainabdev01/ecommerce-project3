@@ -1,50 +1,95 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Ecommerce Store</title>
+<title>Ecommerce Store</title>
+
+<style>
+body{
+    font-family: Arial;
+    background:#f4f4f4;
+    margin:0;
+    padding:20px;
+}
+
+h1{
+    background:#222;
+    color:white;
+    text-align:center;
+    padding:15px;
+}
+
+.card{
+    background:white;
+    padding:15px;
+    margin:10px;
+    border-radius:10px;
+    box-shadow:0 2px 5px rgba(0,0,0,0.2);
+}
+
+button{
+    padding:6px 10px;
+    margin-top:5px;
+    cursor:pointer;
+}
+
+input{
+    padding:8px;
+    margin:5px;
+}
+
+.section{
+    margin:20px 0;
+}
+</style>
+
 </head>
 <body>
 
 <h1>🛒 Ecommerce Store</h1>
 
 <!-- LOGIN -->
+<div class="section">
 <h2>🔐 Login</h2>
-<input id="user" placeholder="Username"><br><br>
-<input id="pass" type="password" placeholder="Password"><br><br>
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
 <p id="loginMsg"></p>
+</div>
 
 <hr>
 
 <!-- PRODUCTS -->
-<div id="products"></div>
+<div class="section" id="products"></div>
 
 <hr>
 
 <!-- CART -->
+<div class="section">
 <h2>🛒 Cart</h2>
 <div id="cart"></div>
 <button onclick="checkout()">🧾 Checkout</button>
+</div>
 
 <hr>
 
 <!-- ORDERS -->
-<h2>📦 Order History</h2>
+<div class="section">
+<h2>📦 Orders</h2>
 <div id="orders"></div>
 <button onclick="loadOrders()">Load Orders</button>
+</div>
 
 <hr>
 
 <!-- ADMIN -->
-<div id="adminPanel" style="display:none;">
+<div id="adminPanel" style="display:none;" class="section">
 <h2>🔐 Admin Panel</h2>
 
-<input id="pname" placeholder="Product Name"><br><br>
-<input id="pdesc" placeholder="Description"><br><br>
-<input id="pprice" placeholder="Price"><br><br>
+<input id="pname" placeholder="Product Name">
+<input id="pdesc" placeholder="Description">
+<input id="pprice" placeholder="Price">
 
 <button onclick="addProduct()">➕ Add Product</button>
-
 <br><br>
 <button onclick="logout()">🚪 Logout</button>
 </div>
@@ -53,129 +98,132 @@
 
 // ---------------- LOGIN ----------------
 function login(){
-    fetch("/api/login", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-            username: user.value,
-            password: pass.value
-        })
-    })
-    .then(r=>r.json())
-    .then(d=>{
-        loginMsg.innerText = d.message;
-        if(d.success){
-            adminPanel.style.display = "block";
-        }
-    });
+fetch("/api/login",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+username:user.value,
+password:pass.value
+})
+})
+.then(r=>r.json())
+.then(d=>{
+loginMsg.innerText=d.message;
+if(d.success){
+adminPanel.style.display="block";
+}
+});
 }
 
 // ---------------- LOGOUT ----------------
 function logout(){
-    fetch("/api/logout",{method:"POST"})
-    .then(r=>r.json())
-    .then(d=>{
-        alert(d.message);
-        adminPanel.style.display="none";
-    });
+fetch("/api/logout",{method:"POST"})
+.then(r=>r.json())
+.then(d=>{
+alert(d.message);
+adminPanel.style.display="none";
+});
 }
 
 // ---------------- PRODUCTS ----------------
 fetch("/api/products")
 .then(r=>r.json())
 .then(data=>{
-    let html="";
-    data.forEach(p=>{
-        html+=`
-        <div style="border:1px solid #ccc; margin:10px; padding:10px;">
-            <h3>${p.name}</h3>
-            <p>${p.description}</p>
-            <b>Rs ${p.price}</b>
-            <button onclick="addToCart('${p.name}')">Add</button>
-        </div>`;
-    });
-    products.innerHTML=html;
+let html="";
+data.forEach(p=>{
+html+=`
+<div class="card">
+<h3>${p.name}</h3>
+<p>${p.description}</p>
+<b>Rs ${p.price}</b><br>
+<button onclick="addToCart('${p.name}')">Add to Cart</button>
+</div>`;
+});
+products.innerHTML=html;
 });
 
 // ---------------- CART ----------------
 function addToCart(name){
-    fetch("/api/cart",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({name})
-    })
-    .then(r=>r.json())
-    .then(d=>{
-        alert(d.message);
-        loadCart();
-    });
+fetch("/api/cart",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({name})
+})
+.then(r=>r.json())
+.then(d=>{
+alert(d.message);
+loadCart();
+});
 }
 
 function loadCart(){
-    fetch("/api/cart")
-    .then(r=>r.json())
-    .then(data=>{
-        let html="";
-        data.forEach(c=>{
-            html+=`<p>🛍 ${c.product_name} (Qty:${c.quantity})
-            <button onclick="removeItem(${c.id})">❌</button></p>`;
-        });
-        cart.innerHTML=html;
-    });
+fetch("/api/cart")
+.then(r=>r.json())
+.then(data=>{
+let html="";
+data.forEach(c=>{
+html+=`
+<div class="card">
+🛍 ${c.product_name} (Qty:${c.quantity})
+<button onclick="removeItem(${c.id})">❌</button>
+</div>`;
+});
+cart.innerHTML=html;
+});
 }
 
 function removeItem(id){
-    fetch("/api/cart/delete",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({id})
-    })
-    .then(r=>r.json())
-    .then(d=>{
-        alert(d.message);
-        loadCart();
-    });
+fetch("/api/cart/delete",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({id})
+})
+.then(r=>r.json())
+.then(d=>{
+alert(d.message);
+loadCart();
+});
 }
 
 // ---------------- CHECKOUT ----------------
 function checkout(){
-    fetch("/api/checkout",{method:"POST"})
-    .then(r=>r.json())
-    .then(d=>{
-        alert(d.message);
-        loadCart();
-    });
+fetch("/api/checkout",{method:"POST"})
+.then(r=>r.json())
+.then(d=>{
+alert(d.message);
+loadCart();
+});
 }
 
 // ---------------- ORDERS ----------------
 function loadOrders(){
-    fetch("/api/orders")
-    .then(r=>r.json())
-    .then(data=>{
-        let html="";
-        data.forEach(o=>{
-            html+=`<p>📦 ${o.product_name} (Qty:${o.quantity})</p>`;
-        });
-        orders.innerHTML=html;
-    });
+fetch("/api/orders")
+.then(r=>r.json())
+.then(data=>{
+let html="";
+data.forEach(o=>{
+html+=`<div class="card">📦 ${o.product_name} (Qty:${o.quantity})</div>`;
+});
+orders.innerHTML=html;
+});
 }
 
 // ---------------- ADD PRODUCT ----------------
 function addProduct(){
-    fetch("/api/add_product",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-            name:pname.value,
-            description:pdesc.value,
-            price:pprice.value
-        })
-    })
-    .then(r=>r.json())
-    .then(d=>{
-        alert(d.message);
-        location.reload();
-    });
+fetch("/api/add_product",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+name:pname.value,
+description:pdesc.value,
+price:pprice.value
+})
+})
+.then(r=>r.json())
+.then(d=>{
+alert(d.message);
+location.reload();
+});
 }
 
 // INIT
