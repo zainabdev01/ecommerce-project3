@@ -1,80 +1,70 @@
 from flask import Flask, request, jsonify
-import pyodbc
 from flask_cors import CORS
+import sqlite3
 
 app = Flask(__name__)
 CORS(app)
 
-# ==============================
-# SQL SERVER CONNECTION
-# ==============================
-conn = pyodbc.connect(
-    'DRIVER={SQL Server};'
-    'SERVER=localhost;'
-    'DATABASE=Ecommerce_order_managmentsystem;'
-    'Trusted_Connection=yes;'
-)
+# --------------------------
+# DATABASE CONNECTION (SQLite)
+# --------------------------
+def get_db():
+    conn = sqlite3.connect("ecommerce.db")
+    conn.row_factory = sqlite3.Row
+    return conn
 
-# ==============================
-# HOME TEST
-# ==============================
-@app.route('/')
+# --------------------------
+# HOME ROUTE
+# --------------------------
+@app.route("/")
 def home():
-    return "Ecommerce Backend is Running"
+    return "Ecommerce Backend Running Successfully"
 
-# ==============================
-# PRODUCTS API
-# ==============================
-@app.route('/products', methods=['GET'])
-def products():
+# --------------------------
+# ADD USER (example)
+# --------------------------
+@app.route("/add_user", methods=["POST"])
+def add_user():
+    data = request.json
+    conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM Products")
-    
-    data = []
-    for row in cursor.fetchall():
-        data.append({
-            "id": row.product_id,
-            "name": row.name,
-            "price": float(row.price),
-            "stock": row.stock_quantity
-        })
-    return jsonify(data)
 
-# ==============================
-# USERS API
-# ==============================
-@app.route('/users', methods=['GET'])
-def users():
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS Users (
+            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            email TEXT,
+            password TEXT
+        )
+    """)
+
+    cursor.execute("""
+        INSERT INTO Users (name, email, password)
+        VALUES (?, ?, ?)
+    """, (data["name"], data["email"], data["password"]))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "User added successfully"})
+
+# --------------------------
+# GET USERS
+# --------------------------
+@app.route("/users")
+def get_users():
+    conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT user_id, name, email FROM Users")
 
-    data = []
-    for row in cursor.fetchall():
-        data.append({
-            "id": row.user_id,
-            "name": row.name,
-            "email": row.email
-        })
-    return jsonify(data)
+    cursor.execute("SELECT * FROM Users")
+    users = cursor.fetchall()
 
-# ==============================
-# ORDERS API
-# ==============================
-@app.route('/orders/<int:user_id>', methods=['GET'])
-def orders(user_id):
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM Orders WHERE user_id = ?", (user_id,))
+    conn.close()
 
-    data = []
-    for row in cursor.fetchall():
-        data.append({
-            "order_id": row.order_id,
-            "status": row.status
-        })
-    return jsonify(data)
+    return jsonify([dict(u) for u in users])
 
-# ==============================
-# RUN SERVER
-# ==============================
-if __name__ == '__main__':
-    app.run(debug=True)
+# --------------------------
+# RUN APP
+# --------------------------
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
