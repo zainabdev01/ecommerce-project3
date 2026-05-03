@@ -4,65 +4,54 @@
 <title>MyStore</title>
 
 <style>
-body{
-    margin:0;
-    font-family:Arial;
-    background:#eef2f7;
-}
+body{margin:0;font-family:Arial;background:#eef2f7;}
 
 .navbar{
-    background:#1e293b;
-    color:white;
-    display:flex;
-    justify-content:space-between;
-    padding:15px 30px;
+background:#1e293b;color:white;display:flex;
+justify-content:space-between;padding:15px 30px;
+}
+
+.navbar input{
+padding:6px;border-radius:5px;border:none;
 }
 
 .navbar button{
-    background:#3b82f6;
-    border:none;
-    color:white;
-    padding:8px 12px;
-    border-radius:5px;
-    margin-left:10px;
+background:#3b82f6;border:none;color:white;
+padding:8px 12px;border-radius:5px;margin-left:10px;
 }
 
-.section{
-    padding:20px;
-}
+.section{padding:20px;}
 
 .card{
-    background:white;
-    padding:15px;
-    margin:10px;
-    border-radius:10px;
-    box-shadow:0 3px 8px rgba(0,0,0,0.1);
+background:white;padding:15px;margin:10px;
+border-radius:10px;box-shadow:0 3px 8px rgba(0,0,0,0.1);
+width:200px;display:inline-block;vertical-align:top;
 }
 
-button{
-    cursor:pointer;
+.card img{
+width:100%;border-radius:10px;
 }
 
-button:hover{
-    opacity:0.8;
-}
+button{cursor:pointer;}
+button:hover{opacity:0.8;}
 </style>
 
 </head>
 <body>
 
 <div class="navbar">
-    <h2>🛒 MyStore</h2>
-    <div>
-        <button onclick="showSection('products')">Products</button>
-        <button onclick="showSection('cartSection')">Cart</button>
-        <button onclick="showSection('orderSection')">Orders</button>
-    </div>
+<h2>🛒 MyStore</h2>
+
+<div>
+<input id="search" placeholder="Search products..." onkeyup="searchProduct()">
+<button onclick="showSection('products')">Products</button>
+<button onclick="showSection('cartSection')">Cart</button>
+<button onclick="showSection('orderSection')">Orders</button>
+</div>
 </div>
 
 <!-- LOGIN -->
 <div class="section">
-<h3>🔐 Login</h3>
 <input id="user" placeholder="Username">
 <input id="pass" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
@@ -92,18 +81,21 @@ button:hover{
 <input id="pname" placeholder="Product Name">
 <input id="pdesc" placeholder="Description">
 <input id="pprice" placeholder="Price">
+<input id="pimage" placeholder="Image URL">
 <button onclick="addProduct()">Add Product</button>
 <button onclick="logout()">Logout</button>
 </div>
 
 <script>
 
+let allProducts=[];
+
 // NAVIGATION
 function showSection(id){
-    products.style.display="none";
-    cartSection.style.display="none";
-    orderSection.style.display="none";
-    document.getElementById(id).style.display="block";
+products.style.display="none";
+cartSection.style.display="none";
+orderSection.style.display="none";
+document.getElementById(id).style.display="block";
 }
 
 // LOGIN
@@ -116,9 +108,7 @@ body:JSON.stringify({username:user.value,password:pass.value})
 .then(r=>r.json())
 .then(d=>{
 loginMsg.innerText=d.message;
-if(d.success){
-adminPanel.style.display="block";
-}
+if(d.success){adminPanel.style.display="block";}
 });
 }
 
@@ -132,14 +122,23 @@ adminPanel.style.display="none";
 });
 }
 
-// PRODUCTS
+// LOAD PRODUCTS
+function loadProducts(){
 fetch("/api/products")
 .then(r=>r.json())
 .then(data=>{
+allProducts=data;
+displayProducts(data);
+});
+}
+
+// DISPLAY PRODUCTS
+function displayProducts(data){
 let html="";
 data.forEach(p=>{
 html+=`
 <div class="card">
+<img src="${p.image}">
 <h3>${p.name}</h3>
 <p>${p.description}</p>
 <b>Rs ${p.price}</b><br>
@@ -147,7 +146,14 @@ html+=`
 </div>`;
 });
 products.innerHTML=html;
-});
+}
+
+// SEARCH
+function searchProduct(){
+let keyword=document.getElementById("search").value.toLowerCase();
+let filtered=allProducts.filter(p=>p.name.toLowerCase().includes(keyword));
+displayProducts(filtered);
+}
 
 // CART
 function addToCart(name){
@@ -200,12 +206,18 @@ orders.innerHTML=html;
 // ADD PRODUCT
 function addProduct(){
 fetch("/api/add_product",{method:"POST",headers:{"Content-Type":"application/json"},
-body:JSON.stringify({name:pname.value,description:pdesc.value,price:pprice.value})})
+body:JSON.stringify({
+name:pname.value,
+description:pdesc.value,
+price:pprice.value,
+image:pimage.value
+})})
 .then(r=>r.json())
 .then(d=>{alert(d.message);location.reload();});
 }
 
 // INIT
+loadProducts();
 loadCart();
 
 </script>
