@@ -38,6 +38,14 @@ def init_db():
     )
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS Orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_name TEXT,
+        quantity INTEGER
+    )
+    """)
+
     # sample data only first time
     cursor.execute("SELECT COUNT(*) FROM Products")
     if cursor.fetchone()[0] == 0:
@@ -120,6 +128,28 @@ def delete_cart():
     conn.close()
 
     return jsonify({"message": "Item removed"})
+
+# ---------------- CHECKOUT ----------------
+@app.route("/api/checkout", methods=["POST"])
+def checkout():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM Cart")
+    cart_items = cursor.fetchall()
+
+    for item in cart_items:
+        cursor.execute("""
+            INSERT INTO Orders (product_name, quantity)
+            VALUES (?, ?)
+        """, (item["product_name"], item["quantity"]))
+
+    cursor.execute("DELETE FROM Cart")
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "Order placed successfully"})
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":

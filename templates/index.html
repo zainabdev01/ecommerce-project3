@@ -16,6 +16,8 @@
 <h2>🛒 My Cart</h2>
 <div id="cart"></div>
 
+<button onclick="checkout()">🧾 Checkout</button>
+
 <script>
 
 // ---------------- PRODUCTS ----------------
@@ -26,7 +28,7 @@ fetch("/api/products")
 
     data.forEach(p => {
         html += `
-            <div style="border:1px solid black; padding:10px; margin:10px;">
+            <div style="border:1px solid #ccc; padding:10px; margin:10px;">
                 <h3>${p.name}</h3>
                 <p>${p.description}</p>
                 <p><b>Rs ${p.price}</b></p>
@@ -82,6 +84,18 @@ function removeItem(id){
         method: "POST",
         headers: {"Content-Type":"application/json"},
         body: JSON.stringify({id:id})
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        loadCart();
+    });
+}
+
+// ---------------- CHECKOUT ----------------
+function checkout(){
+    fetch("/api/checkout", {
+        method: "POST"
     })
     .then(res => res.json())
     .then(data => {
