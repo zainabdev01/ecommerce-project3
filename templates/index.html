@@ -21,7 +21,7 @@ fetch("/api/products")
                 <h3>${p.name}</h3>
                 <p>${p.description}</p>
                 <p><b>Rs ${p.price}</b></p>
-                <button onclick="addCart('${p.name}')">Add to Cart</button>
+                <button onclick="addToCart('${p.name}')">Add to Cart</button>
             </div>
         `;
     });
@@ -29,7 +29,7 @@ fetch("/api/products")
     document.getElementById("products").innerHTML = html;
 });
 
-function addCart(name){
+function addToCart(name){
     fetch("/api/cart", {
         method: "POST",
         headers: {"Content-Type":"application/json"},
