@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ecommerce System</title>
+</head>
+<body>
+
+<h1>🛒 Ecommerce Project</h1>
+
+<button onclick="getProducts()">Show Products</button>
+<button onclick="getUsers()">Show Users</button>
+<button onclick="getOrders()">Show Orders</button>
+
+<ul id="output"></ul>
+
+<script>
+
+const API = "http://127.0.0.1:5000";
+
+function show(data){
+    let out = document.getElementById("output");
+    out.innerHTML = "";
+
+    data.forEach(item => {
+        let li = document.createElement("li");
+        li.innerText = JSON.stringify(item);
+        out.appendChild(li);
+    });
+}
+
+function getProducts(){
+    fetch(API + "/products")
+    .then(res => res.json())
+    .then(show);
+}
+
+function getUsers(){
+    fetch(API + "/users")
+    .then(res => res.json())
+    .then(show);
+}
+
+function getOrders(){
+    fetch(API + "/orders/1")
+    .then(res => res.json())
+    .then(show);
+}
+
+</script>
+
+</body>
+</html>
