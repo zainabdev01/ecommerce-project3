@@ -11,7 +11,7 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-# ---------------- HOME PAGE ----------------
+# ---------------- HOME ----------------
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -38,7 +38,7 @@ def init_db():
     )
     """)
 
-    # sample data
+    # sample data only first time
     cursor.execute("SELECT COUNT(*) FROM Products")
     if cursor.fetchone()[0] == 0:
         cursor.executemany("""
@@ -53,7 +53,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# ---------------- PRODUCTS API ----------------
+# ---------------- PRODUCTS ----------------
 @app.route("/api/products")
 def products():
     conn = get_db()
@@ -61,7 +61,16 @@ def products():
     cursor.execute("SELECT * FROM Products")
     data = cursor.fetchall()
     conn.close()
-    return jsonify([dict(row) for row in data])
+
+    return jsonify([
+        {
+            "id": row["id"],
+            "name": row["name"],
+            "description": row["description"],
+            "price": row["price"]
+        }
+        for row in data
+    ])
 
 # ---------------- ADD TO CART ----------------
 @app.route("/api/cart", methods=["POST"])
@@ -85,12 +94,32 @@ def add_cart():
 def get_cart():
     conn = get_db()
     cursor = conn.cursor()
-
     cursor.execute("SELECT * FROM Cart")
     data = cursor.fetchall()
-
     conn.close()
-    return jsonify([dict(row) for row in data])
+
+    return jsonify([
+        {
+            "id": row["id"],
+            "product_name": row["product_name"],
+            "quantity": row["quantity"]
+        }
+        for row in data
+    ])
+
+# ---------------- DELETE CART ITEM ----------------
+@app.route("/api/cart/delete", methods=["POST"])
+def delete_cart():
+    data = request.json
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM Cart WHERE id = ?", (data["id"],))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "Item removed"})
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":

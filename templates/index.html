@@ -63,7 +63,12 @@ function loadCart(){
             html = "<p>Cart is empty</p>";
         } else {
             data.forEach(c => {
-                html += `<p>🛍 ${c.product_name} (Qty: ${c.quantity})</p>`;
+                html += `
+                    <p>
+                        🛍 ${c.product_name} (Qty: ${c.quantity})
+                        <button onclick="removeItem(${c.id})">❌</button>
+                    </p>
+                `;
             });
         }
 
@@ -71,7 +76,21 @@ function loadCart(){
     });
 }
 
-// initial cart load
+// ---------------- REMOVE ITEM ----------------
+function removeItem(id){
+    fetch("/api/cart/delete", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({id:id})
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        loadCart();
+    });
+}
+
+// initial load
 loadCart();
 
 </script>
