@@ -33,6 +33,7 @@
 
 <!-- ADMIN PANEL -->
 <div id="adminPanel" style="display:none;">
+
 <h2>🔐 Admin Panel (Add Product)</h2>
 
 <input id="pname" placeholder="Product Name"><br><br>
@@ -40,6 +41,10 @@
 <input id="pprice" placeholder="Price"><br><br>
 
 <button onclick="addProduct()">➕ Add Product</button>
+
+<br><br>
+<button onclick="logout()">🚪 Logout</button>
+
 </div>
 
 <script>
@@ -61,6 +66,16 @@ function login(){
         if(data.success){
             document.getElementById("adminPanel").style.display = "block";
         }
+    });
+}
+
+// ---------------- LOGOUT ----------------
+function logout(){
+    fetch("/api/logout", {method:"POST"})
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        document.getElementById("adminPanel").style.display = "none";
     });
 }
 
@@ -136,9 +151,7 @@ function removeItem(id){
 
 // ---------------- CHECKOUT ----------------
 function checkout(){
-    fetch("/api/checkout", {
-        method: "POST"
-    })
+    fetch("/api/checkout", {method:"POST"})
     .then(res => res.json())
     .then(data => {
         alert(data.message);
@@ -164,7 +177,7 @@ function addProduct(){
     });
 }
 
-// init
+// INIT
 loadCart();
 
 </script>

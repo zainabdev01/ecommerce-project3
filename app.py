@@ -70,6 +70,11 @@ def login():
     else:
         return jsonify({"success": False, "message": "Invalid credentials"})
 
+# ---------------- LOGOUT ----------------
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    return jsonify({"message": "Logged out successfully"})
+
 # ---------------- PRODUCTS ----------------
 @app.route("/api/products")
 def products():
