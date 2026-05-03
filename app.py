@@ -60,6 +60,16 @@ def init_db():
     conn.commit()
     conn.close()
 
+# ---------------- LOGIN ----------------
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.json
+
+    if data["username"] == "admin" and data["password"] == "1234":
+        return jsonify({"success": True, "message": "Login successful"})
+    else:
+        return jsonify({"success": False, "message": "Invalid credentials"})
+
 # ---------------- PRODUCTS ----------------
 @app.route("/api/products")
 def products():
@@ -71,7 +81,7 @@ def products():
 
     return jsonify([dict(row) for row in data])
 
-# ---------------- ADD PRODUCT (ADMIN) ----------------
+# ---------------- ADD PRODUCT ----------------
 @app.route("/api/add_product", methods=["POST"])
 def add_product():
     data = request.json
@@ -88,7 +98,7 @@ def add_product():
 
     return jsonify({"message": "Product added successfully"})
 
-# ---------------- ADD TO CART ----------------
+# ---------------- CART ----------------
 @app.route("/api/cart", methods=["POST"])
 def add_cart():
     data = request.json
@@ -105,7 +115,6 @@ def add_cart():
 
     return jsonify({"message": "Added to cart"})
 
-# ---------------- GET CART ----------------
 @app.route("/api/cart", methods=["GET"])
 def get_cart():
     conn = get_db()
@@ -116,7 +125,6 @@ def get_cart():
 
     return jsonify([dict(row) for row in data])
 
-# ---------------- DELETE CART ----------------
 @app.route("/api/cart/delete", methods=["POST"])
 def delete_cart():
     data = request.json

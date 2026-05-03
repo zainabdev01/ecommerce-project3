@@ -7,6 +7,17 @@
 
 <h1>🛒 Ecommerce Store</h1>
 
+<!-- LOGIN -->
+<h2>🔐 Login (Admin Only)</h2>
+
+<input id="user" placeholder="Username"><br><br>
+<input id="pass" type="password" placeholder="Password"><br><br>
+
+<button onclick="login()">Login</button>
+<p id="loginMsg"></p>
+
+<hr>
+
 <!-- PRODUCTS -->
 <div id="products"></div>
 
@@ -21,6 +32,7 @@
 <hr>
 
 <!-- ADMIN PANEL -->
+<div id="adminPanel" style="display:none;">
 <h2>🔐 Admin Panel (Add Product)</h2>
 
 <input id="pname" placeholder="Product Name"><br><br>
@@ -28,10 +40,31 @@
 <input id="pprice" placeholder="Price"><br><br>
 
 <button onclick="addProduct()">➕ Add Product</button>
+</div>
 
 <script>
 
-// ---------------- LOAD PRODUCTS ----------------
+// ---------------- LOGIN ----------------
+function login(){
+    fetch("/api/login", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            username: document.getElementById("user").value,
+            password: document.getElementById("pass").value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("loginMsg").innerText = data.message;
+
+        if(data.success){
+            document.getElementById("adminPanel").style.display = "block";
+        }
+    });
+}
+
+// ---------------- PRODUCTS ----------------
 fetch("/api/products")
 .then(res => res.json())
 .then(data => {
@@ -51,7 +84,7 @@ fetch("/api/products")
     document.getElementById("products").innerHTML = html;
 });
 
-// ---------------- ADD TO CART ----------------
+// ---------------- CART ----------------
 function addToCart(name){
     fetch("/api/cart", {
         method: "POST",
@@ -65,7 +98,6 @@ function addToCart(name){
     });
 }
 
-// ---------------- LOAD CART ----------------
 function loadCart(){
     fetch("/api/cart")
     .then(res => res.json())
@@ -89,7 +121,6 @@ function loadCart(){
     });
 }
 
-// ---------------- REMOVE ITEM ----------------
 function removeItem(id){
     fetch("/api/cart/delete", {
         method: "POST",
@@ -115,7 +146,7 @@ function checkout(){
     });
 }
 
-// ---------------- ADD PRODUCT (ADMIN) ----------------
+// ---------------- ADD PRODUCT ----------------
 function addProduct(){
     fetch("/api/add_product", {
         method: "POST",
@@ -133,7 +164,7 @@ function addProduct(){
     });
 }
 
-// initial load
+// init
 loadCart();
 
 </script>
