@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# ---------------- DATABASE ----------------
+# ---------------- DB ----------------
 def get_db():
     conn = sqlite3.connect("ecommerce.db")
     conn.row_factory = sqlite3.Row
@@ -24,7 +24,6 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
 
-    # PRODUCTS
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,27 +34,26 @@ def init_db():
     )
     """)
 
-    # CART (with price FIXED)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Cart (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_name TEXT,
         quantity INTEGER,
-        price REAL
+        price REAL,
+        image TEXT
     )
     """)
 
-    # ORDERS
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_name TEXT,
         quantity INTEGER,
-        price REAL
+        price REAL,
+        image TEXT
     )
     """)
 
-    # SAMPLE DATA
     cursor.execute("SELECT COUNT(*) FROM Products")
     if cursor.fetchone()[0] == 0:
         cursor.executemany("""
@@ -64,7 +62,7 @@ def init_db():
         """, [
             ("Laptop", "Core i5 8GB RAM", 75000, "https://via.placeholder.com/200"),
             ("Mobile", "128GB Storage", 45000, "https://via.placeholder.com/200"),
-            ("Headphones", "Wireless Headphones", 5000, "https://via.placeholder.com/200")
+            ("Headphones", "Wireless", 5000, "https://via.placeholder.com/200")
         ])
 
     conn.commit()
@@ -77,9 +75,9 @@ def login():
     data = request.get_json()
 
     if data.get("username") == "admin" and data.get("password") == "1234":
-        return jsonify({"success": True, "message": "Login successful"})
+        return jsonify({"success": True, "message": "Login success"})
 
-    return jsonify({"success": False, "message": "Invalid credentials"})
+    return jsonify({"success": False, "message": "Invalid"})
 
 
 # ---------------- PRODUCTS ----------------
@@ -105,10 +103,10 @@ def add_product():
     INSERT INTO Products (name, description, price, image)
     VALUES (?, ?, ?, ?)
     """, (
-        data.get("name"),
-        data.get("description"),
-        data.get("price"),
-        data.get("image")
+        data["name"],
+        data["description"],
+        data["price"],
+        data["image"]
     ))
 
     conn.commit()
@@ -135,9 +133,9 @@ def add_cart():
         """, (item["id"],))
     else:
         cursor.execute("""
-        INSERT INTO Cart (product_name, quantity, price)
-        VALUES (?, ?, ?)
-        """, (data["name"], 1, data["price"]))
+        INSERT INTO Cart (product_name, quantity, price, image)
+        VALUES (?, ?, ?, ?)
+        """, (data["name"], 1, data["price"], data["image"]))
 
     conn.commit()
     conn.close()
@@ -175,10 +173,10 @@ def update_cart():
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Cart updated"})
+    return jsonify({"message": "Updated"})
 
 
-# ---------------- DELETE ITEM ----------------
+# ---------------- DELETE ----------------
 @app.route("/api/cart/<int:id>", methods=["DELETE"])
 def delete_item(id):
     conn = get_db()
@@ -200,9 +198,9 @@ def checkout():
 
     for i in items:
         cursor.execute("""
-        INSERT INTO Orders (product_name, quantity, price)
-        VALUES (?, ?, ?)
-        """, (i["product_name"], i["quantity"], i["price"]))
+        INSERT INTO Orders (product_name, quantity, price, image)
+        VALUES (?, ?, ?, ?)
+        """, (i["product_name"], i["quantity"], i["price"], i["image"]))
 
     cursor.execute("DELETE FROM Cart")
 
@@ -223,7 +221,7 @@ def orders():
     return jsonify([dict(row) for row in data])
 
 
-# ---------------- RUN (RENDER FIXED) ----------------
+# ---------------- RUN (RENDER FIX) ----------------
 if __name__ == "__main__":
     init_db()
 
