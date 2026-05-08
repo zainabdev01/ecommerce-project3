@@ -11,48 +11,43 @@ font-family:Arial;
 background:#eef2f7;
 }
 
-/* NAVBAR */
 .navbar{
 background:#1e293b;
 color:white;
 display:flex;
 justify-content:space-between;
-align-items:center;
-padding:15px 25px;
+padding:15px;
 flex-wrap:wrap;
 }
 
-.navbar input{
-padding:8px;
-border:none;
-border-radius:5px;
-}
-
 .navbar button{
+margin:5px;
+padding:8px 12px;
 background:#3b82f6;
 color:white;
 border:none;
-padding:8px 12px;
-margin-left:5px;
 border-radius:5px;
 cursor:pointer;
 }
 
-/* SECTIONS */
 .section{
 padding:20px;
+display:none;
 }
 
-/* PRODUCT CARD */
+.active{
+display:block;
+}
+
 .card{
 background:white;
 padding:15px;
 margin:10px;
 border-radius:10px;
-box-shadow:0 3px 10px rgba(0,0,0,0.1);
 width:220px;
 display:inline-block;
 vertical-align:top;
+box-shadow:0 3px 8px rgba(0,0,0,0.1);
 }
 
 .card img{
@@ -61,16 +56,6 @@ height:180px;
 object-fit:cover;
 border-radius:10px;
 }
-
-/* BUTTONS */
-button{
-cursor:pointer;
-}
-
-button:hover{
-opacity:0.85;
-}
-
 </style>
 </head>
 
@@ -81,78 +66,75 @@ opacity:0.85;
 <h2>🛒 MyStore</h2>
 
 <div>
-<input id="search" placeholder="Search products..." onkeyup="searchProduct()">
-<button onclick="showSection('products')">Products</button>
-<button onclick="showSection('cart')">Cart</button>
+<button onclick="show('products')">Products</button>
+<button onclick="show('cart')">Cart</button>
+<button onclick="show('orders')">Orders</button>
+<button onclick="show('login')">Login</button>
 </div>
 </div>
 
-<!-- LOGIN (optional simple) -->
-<div class="section">
-<input id="user" placeholder="Username">
-<input id="pass" type="password" placeholder="Password">
+<!-- LOGIN -->
+<div id="login" class="section">
+<h2>Login</h2>
+<input id="user" placeholder="Username"><br><br>
+<input id="pass" type="password" placeholder="Password"><br><br>
 <button onclick="login()">Login</button>
 <p id="msg"></p>
 </div>
 
 <!-- PRODUCTS -->
-<div id="products" class="section"></div>
+<div id="products" class="section active"></div>
 
 <!-- CART -->
-<div id="cart" class="section" style="display:none;"></div>
+<div id="cart" class="section"></div>
+
+<!-- ORDERS -->
+<div id="orders" class="section"></div>
 
 <script>
 
 let allProducts = [];
 
-/* ---------------- INIT ---------------- */
-document.addEventListener("DOMContentLoaded", () => {
-loadProducts();
-loadCart();
-});
+/* ---------------- SHOW SECTIONS ---------------- */
+function show(id){
 
-/* ---------------- NAVIGATION ---------------- */
-function showSection(id){
+document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
 
-document.getElementById("products").style.display="none";
-document.getElementById("cart").style.display="none";
-
-document.getElementById(id).style.display="block";
+if(id==="products") loadProducts();
+if(id==="cart") loadCart();
+if(id==="orders") loadOrders();
 
 }
 
 /* ---------------- LOAD PRODUCTS ---------------- */
 function loadProducts(){
-
 fetch("/api/products")
-.then(r => r.json())
-.then(data => {
-allProducts = data;
+.then(r=>r.json())
+.then(data=>{
+allProducts=data;
 renderProducts(data);
-})
-.catch(err => console.log(err));
-
+});
 }
 
-/* ---------------- RENDER PRODUCTS ---------------- */
+/* ---------------- PRODUCTS UI ---------------- */
 function renderProducts(data){
 
-let html = "";
+let html="";
 
-data.forEach(p => {
+data.forEach(p=>{
 
-html += `
+html+=`
 <div class="card">
 
-<img src="${p.image}" 
-onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
+<img src="${p.image}">
 
 <h3>${p.name}</h3>
 <p>${p.description}</p>
 
 <b>Rs ${p.price}</b><br><br>
 
-<button onclick="addToCart('${p.name}', ${p.price}, '${p.image}')">
+<button onclick="addToCart('${p.name}',${p.price},'${p.image}')">
 Add to Cart
 </button>
 
@@ -161,127 +143,99 @@ Add to Cart
 
 });
 
-document.getElementById("products").innerHTML = html;
-
-}
-
-/* ---------------- SEARCH ---------------- */
-function searchProduct(){
-
-let key = document.getElementById("search").value.toLowerCase();
-
-let filtered = allProducts.filter(p =>
-p.name.toLowerCase().includes(key)
-);
-
-renderProducts(filtered);
-
+document.getElementById("products").innerHTML=html;
 }
 
 /* ---------------- ADD TO CART ---------------- */
-function addToCart(name, price, image){
+function addToCart(name,price,image){
 
 fetch("/api/cart",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
-body:JSON.stringify({name, price, image})
+body:JSON.stringify({name,price,image})
 })
-.then(r => r.json())
-.then(d => {
-alert(d.message);
-loadCart();
-});
+.then(r=>r.json())
+.then(()=>loadCart());
 
 }
 
-/* ---------------- LOAD CART ---------------- */
+/* ---------------- CART ---------------- */
 function loadCart(){
 
 fetch("/api/cart")
-.then(r => r.json())
-.then(data => {
+.then(r=>r.json())
+.then(data=>{
 
-let html = "";
-let total = 0;
+let html="";
+let total=0;
 
-if(data.length === 0){
-html = "<p>Your cart is empty</p>";
-}
+data.forEach(c=>{
+total+=c.quantity*c.price;
 
-data.forEach(c => {
-
-total += c.quantity * c.price;
-
-html += `
+html+=`
 <div class="card">
 
-<img src="${c.image}" 
-onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
+<img src="${c.image}">
 
 <h3>${c.product_name}</h3>
 
-<button onclick="changeQty(${c.id}, ${c.quantity - 1})">-</button>
+<button onclick="changeQty(${c.id},${c.quantity-1})">-</button>
 <b>${c.quantity}</b>
-<button onclick="changeQty(${c.id}, ${c.quantity + 1})">+</button>
+<button onclick="changeQty(${c.id},${c.quantity+1})">+</button>
 
 <p>Rs ${c.price}</p>
 
-<button onclick="removeItem(${c.id})">Remove</button>
-
 </div>
 `;
-
 });
 
-html += `
-<h2>Total: Rs ${total}</h2>
-<button onclick="checkout()">Checkout</button>
-`;
+html+=`<h2>Total: Rs ${total}</h2>
+<button onclick="checkout()">Checkout</button>`;
 
-document.getElementById("cart").innerHTML = html;
+document.getElementById("cart").innerHTML=html;
 
 });
 
 }
 
-/* ---------------- CHANGE QTY ---------------- */
-function changeQty(id, qty){
-
-if(qty <= 0){
-removeItem(id);
-return;
-}
+/* ---------------- QTY ---------------- */
+function changeQty(id,qty){
 
 fetch("/api/cart/update",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
-body:JSON.stringify({id, quantity: qty})
+body:JSON.stringify({id,quantity:qty})
 })
-.then(() => loadCart());
+.then(()=>loadCart());
 
 }
 
-/* ---------------- REMOVE ITEM ---------------- */
-function removeItem(id){
+/* ---------------- ORDERS ---------------- */
+function loadOrders(){
 
-fetch("/api/cart/" + id, { method: "DELETE" })
-.then(() => loadCart());
+fetch("/api/orders")
+.then(r=>r.json())
+.then(data=>{
 
-}
+let html="";
 
-/* ---------------- CHECKOUT ---------------- */
-function checkout(){
+data.forEach(o=>{
+html+=`
+<div class="card">
+<h3>${o.product_name}</h3>
+<p>Qty: ${o.quantity}</p>
+<p>Rs ${o.price}</p>
+</div>
+`;
+});
 
-fetch("/api/checkout", { method: "POST" })
-.then(r => r.json())
-.then(d => {
-alert(d.message);
-loadCart();
+document.getElementById("orders").innerHTML=html;
+
 });
 
 }
 
-/* ---------------- SIMPLE LOGIN (optional) ---------------- */
+/* ---------------- LOGIN ---------------- */
 function login(){
 
 fetch("/api/login",{
@@ -292,12 +246,27 @@ username:user.value,
 password:pass.value
 })
 })
-.then(r => r.json())
-.then(d => {
-msg.innerText = d.message;
+.then(r=>r.json())
+.then(d=>{
+msg.innerText=d.message;
 });
 
 }
+
+/* ---------------- CHECKOUT ---------------- */
+function checkout(){
+
+fetch("/api/checkout",{method:"POST"})
+.then(r=>r.json())
+.then(d=>{
+alert(d.message);
+loadCart();
+});
+
+}
+
+/* INIT */
+loadProducts();
 
 </script>
 
