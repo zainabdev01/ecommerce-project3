@@ -1,3 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MyStore</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:#eef2f7;
+}
+
+/* NAVBAR */
+.navbar{
+background:#1e293b;
+color:white;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px 25px;
+flex-wrap:wrap;
+}
+
+.navbar input{
+padding:8px;
+border:none;
+border-radius:5px;
+}
+
+.navbar button{
+background:#3b82f6;
+color:white;
+border:none;
+padding:8px 12px;
+margin-left:5px;
+border-radius:5px;
+cursor:pointer;
+}
+
+/* SECTIONS */
+.section{
+padding:20px;
+}
+
+/* PRODUCT CARD */
+.card{
+background:white;
+padding:15px;
+margin:10px;
+border-radius:10px;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
+width:220px;
+display:inline-block;
+vertical-align:top;
+}
+
+.card img{
+width:100%;
+height:180px;
+object-fit:cover;
+border-radius:10px;
+}
+
+/* BUTTONS */
+button{
+cursor:pointer;
+}
+
+button:hover{
+opacity:0.85;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+<h2>🛒 MyStore</h2>
+
+<div>
+<input id="search" placeholder="Search products..." onkeyup="searchProduct()">
+<button onclick="showSection('products')">Products</button>
+<button onclick="showSection('cart')">Cart</button>
+</div>
+</div>
+
+<!-- LOGIN (optional simple) -->
+<div class="section">
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<p id="msg"></p>
+</div>
+
+<!-- PRODUCTS -->
+<div id="products" class="section"></div>
+
+<!-- CART -->
+<div id="cart" class="section" style="display:none;"></div>
+
 <script>
 
 let allProducts = [];
@@ -8,18 +111,30 @@ loadProducts();
 loadCart();
 });
 
+/* ---------------- NAVIGATION ---------------- */
+function showSection(id){
+
+document.getElementById("products").style.display="none";
+document.getElementById("cart").style.display="none";
+
+document.getElementById(id).style.display="block";
+
+}
+
 /* ---------------- LOAD PRODUCTS ---------------- */
 function loadProducts(){
+
 fetch("/api/products")
 .then(r => r.json())
 .then(data => {
 allProducts = data;
 renderProducts(data);
 })
-.catch(err => console.log("Products error:", err));
+.catch(err => console.log(err));
+
 }
 
-/* ---------------- DISPLAY PRODUCTS ---------------- */
+/* ---------------- RENDER PRODUCTS ---------------- */
 function renderProducts(data){
 
 let html = "";
@@ -35,7 +150,7 @@ onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
 <h3>${p.name}</h3>
 <p>${p.description}</p>
 
-<b>Rs ${p.price}</b><br>
+<b>Rs ${p.price}</b><br><br>
 
 <button onclick="addToCart('${p.name}', ${p.price}, '${p.image}')">
 Add to Cart
@@ -47,6 +162,19 @@ Add to Cart
 });
 
 document.getElementById("products").innerHTML = html;
+
+}
+
+/* ---------------- SEARCH ---------------- */
+function searchProduct(){
+
+let key = document.getElementById("search").value.toLowerCase();
+
+let filtered = allProducts.filter(p =>
+p.name.toLowerCase().includes(key)
+);
+
+renderProducts(filtered);
 
 }
 
@@ -62,8 +190,7 @@ body:JSON.stringify({name, price, image})
 .then(d => {
 alert(d.message);
 loadCart();
-})
-.catch(err => console.log(err));
+});
 
 }
 
@@ -78,7 +205,7 @@ let html = "";
 let total = 0;
 
 if(data.length === 0){
-html = "<p>Cart is empty</p>";
+html = "<p>Your cart is empty</p>";
 }
 
 data.forEach(c => {
@@ -97,7 +224,7 @@ onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
 <b>${c.quantity}</b>
 <button onclick="changeQty(${c.id}, ${c.quantity + 1})">+</button>
 
-<p>Price: Rs ${c.price}</p>
+<p>Rs ${c.price}</p>
 
 <button onclick="removeItem(${c.id})">Remove</button>
 
@@ -113,12 +240,11 @@ html += `
 
 document.getElementById("cart").innerHTML = html;
 
-})
-.catch(err => console.log(err));
+});
 
 }
 
-/* ---------------- CHANGE QUANTITY ---------------- */
+/* ---------------- CHANGE QTY ---------------- */
 function changeQty(id, qty){
 
 if(qty <= 0){
@@ -155,17 +281,25 @@ loadCart();
 
 }
 
-/* ---------------- SEARCH (OPTIONAL) ---------------- */
-function searchProduct(){
+/* ---------------- SIMPLE LOGIN (optional) ---------------- */
+function login(){
 
-let key = document.getElementById("search").value.toLowerCase();
-
-let filtered = allProducts.filter(p =>
-p.name.toLowerCase().includes(key)
-);
-
-renderProducts(filtered);
+fetch("/api/login",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+username:user.value,
+password:pass.value
+})
+})
+.then(r => r.json())
+.then(d => {
+msg.innerText = d.message;
+});
 
 }
 
 </script>
+
+</body>
+</html>
