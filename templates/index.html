@@ -17,7 +17,7 @@ background:#111827;
 color:white;
 display:flex;
 justify-content:space-between;
-padding:15px 20px;
+padding:15px;
 align-items:center;
 flex-wrap:wrap;
 }
@@ -42,7 +42,7 @@ display:none;
 display:block;
 }
 
-/* CARDS */
+/* CARD */
 .card{
 background:white;
 padding:15px;
@@ -61,24 +61,16 @@ object-fit:cover;
 border-radius:10px;
 }
 
-/* INPUTS */
-input{
-padding:8px;
-margin:5px;
-width:200px;
-}
-
 /* ADMIN PANEL */
 #adminPanel{
 display:none;
-background:#fff;
+background:white;
 padding:15px;
 margin:20px;
 border-radius:10px;
-box-shadow:0 3px 10px rgba(0,0,0,0.1);
+box-shadow:0 2px 8px rgba(0,0,0,0.1);
 }
 </style>
-
 </head>
 
 <body>
@@ -91,6 +83,7 @@ box-shadow:0 3px 10px rgba(0,0,0,0.1);
 <button onclick="show('products')">Products</button>
 <button onclick="show('cart')">Cart</button>
 <button onclick="show('orders')">Orders</button>
+<button onclick="logout()">Logout</button>
 </div>
 </div>
 
@@ -102,15 +95,14 @@ box-shadow:0 3px 10px rgba(0,0,0,0.1);
 <input id="pass" type="password" placeholder="Password"><br>
 
 <button onclick="login()">Login</button>
-
 <p id="msg"></p>
 </div>
 
-<!-- ADMIN PANEL (ADD PRODUCT) -->
+<!-- ADMIN PANEL (ONLY ADMIN SEES THIS) -->
 <div id="adminPanel">
-<h2>➕ Add Product</h2>
+<h2>➕ Add Product (Admin Only)</h2>
 
-<input id="pname" placeholder="Product Name"><br>
+<input id="pname" placeholder="Name"><br>
 <input id="pdesc" placeholder="Description"><br>
 <input id="pprice" placeholder="Price"><br>
 <input id="pimage" placeholder="Image URL"><br>
@@ -130,8 +122,9 @@ box-shadow:0 3px 10px rgba(0,0,0,0.1);
 <script>
 
 let allProducts = [];
+let isAdmin = false;   // 🔥 ROLE FLAG
 
-/* ---------------- NAV ---------------- */
+/* ---------------- SHOW SECTIONS ---------------- */
 function show(id){
 document.querySelectorAll(".section").forEach(s=>{
 s.classList.remove("active");
@@ -156,14 +149,27 @@ password:pass.value
 })
 .then(r=>r.json())
 .then(d=>{
+
 msg.innerText = d.message;
 
 if(d.success){
+
+isAdmin = true;  // 🔥 ADMIN MODE ON
+
 document.getElementById("adminPanel").style.display = "block";
+
 show("products");
 loadProducts();
+
 }
 });
+}
+
+/* ---------------- LOGOUT ---------------- */
+function logout(){
+isAdmin = false;
+document.getElementById("adminPanel").style.display = "none";
+show("login");
 }
 
 /* ---------------- PRODUCTS ---------------- */
@@ -179,7 +185,7 @@ renderProducts(data);
 
 function renderProducts(data){
 
-let html="";
+let html = "";
 
 data.forEach(p=>{
 
@@ -187,24 +193,30 @@ html += `
 <div class="card">
 
 <img src="${p.image}"
-onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
+onerror="this.src='https://via.placeholder.com/200'">
 
 <h3>${p.name}</h3>
 <p>${p.description}</p>
 
 <b>Rs ${p.price}</b><br><br>
 
-<button onclick="addToCart('${p.name}', ${p.price}, '${p.image}')">
+<button onclick="addToCart('${p.name}',${p.price},'${p.image}')">
 Add to Cart
 </button>
-
-<button style="background:red;color:white" onclick="deleteProduct(${p.id})">
-Delete
-</button>
-
-</div>
 `;
 
+
+// 🔥 ONLY ADMIN CAN SEE DELETE BUTTON
+if(isAdmin){
+html += `
+<button style="background:red;color:white"
+onclick="deleteProduct(${p.id})">
+Delete
+</button>
+`;
+}
+
+html += `</div>`;
 });
 
 document.getElementById("products").innerHTML = html;
@@ -230,12 +242,15 @@ loadProducts();
 });
 }
 
-/* ---------------- DELETE PRODUCT ---------------- */
+/* ---------------- DELETE PRODUCT (ADMIN ONLY) ---------------- */
 function deleteProduct(id){
 
-fetch("/api/delete_product/"+id,{method:"DELETE"})
-.then(()=>loadProducts());
+if(!isAdmin) return;
 
+fetch("/api/delete_product/"+id,{
+method:"DELETE"
+})
+.then(()=>loadProducts());
 }
 
 /* ---------------- CART ---------------- */
@@ -290,6 +305,7 @@ document.getElementById("cart").innerHTML = html;
 });
 }
 
+/* ---------------- CART UPDATE ---------------- */
 function changeQty(id,qty){
 
 fetch("/api/cart/update",{
