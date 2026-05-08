@@ -5,26 +5,29 @@
 <title>MyStore</title>
 
 <style>
+
 body{
 margin:0;
 font-family:Arial;
 background:#eef2f7;
 }
 
+/* NAVBAR */
 .navbar{
 background:#1e293b;
 color:white;
 display:flex;
 justify-content:space-between;
 padding:15px 30px;
-align-items:center;
 flex-wrap:wrap;
+align-items:center;
 }
 
 .navbar input{
 padding:8px;
 border:none;
-border-radius:5px;
+border-radius:6px;
+outline:none;
 }
 
 .navbar button{
@@ -32,15 +35,17 @@ background:#3b82f6;
 border:none;
 color:white;
 padding:8px 12px;
-margin-left:5px;
-border-radius:5px;
+margin-left:8px;
+border-radius:6px;
 cursor:pointer;
 }
 
+/* SECTION */
 .section{
 padding:20px;
 }
 
+/* CARD */
 .card{
 background:white;
 padding:15px;
@@ -59,60 +64,111 @@ object-fit:cover;
 border-radius:10px;
 }
 
+/* BUTTONS */
 button{
 cursor:pointer;
 }
 
+.qty-btn{
+padding:5px 10px;
+margin:5px;
+}
+
 </style>
+
 </head>
 
 <body>
 
 <!-- NAVBAR -->
 <div class="navbar">
+
 <h2>🛒 MyStore</h2>
 
 <div>
 <input id="search" placeholder="Search..." onkeyup="searchProduct()">
-<button onclick="showSection('products')">Products</button>
-<button onclick="showSection('cart')">Cart</button>
-<button onclick="showSection('orders')">Orders</button>
+
+<button onclick="show('products')">Products</button>
+<button onclick="show('cart')">Cart</button>
+<button onclick="show('orders')">Orders</button>
 </div>
+
 </div>
 
 <!-- LOGIN -->
 <div class="section">
+
 <input id="user" placeholder="Username">
 <input id="pass" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
 <p id="msg"></p>
+
 </div>
 
-<!-- SECTIONS -->
+<!-- PRODUCTS -->
 <div id="products" class="section"></div>
 
-<div id="cart" class="section" style="display:none;"></div>
+<!-- CART -->
+<div id="cart" class="section" style="display:none;">
+<h2>Cart</h2>
+</div>
 
-<div id="orders" class="section" style="display:none;"></div>
+<!-- ORDERS -->
+<div id="orders" class="section" style="display:none;">
+<h2>Orders</h2>
+</div>
+
+<!-- ADMIN -->
+<div id="admin" class="section" style="display:none;">
+<h3>Admin Panel</h3>
+
+<input id="pname" placeholder="Name">
+<input id="pdesc" placeholder="Desc">
+<input id="pprice" placeholder="Price">
+<input id="pimg" placeholder="Image URL">
+
+<button onclick="addProduct()">Add Product</button>
+<button onclick="logout()">Logout</button>
+
+</div>
 
 <script>
 
-let allProducts = [];
+let allProducts=[];
 
-/* ---------------- INIT ---------------- */
-document.addEventListener("DOMContentLoaded", () => {
-loadProducts();
-loadCart();
-});
+/* ---------------- SHOW SECTION ---------------- */
+function show(id){
 
-/* ---------------- NAV ---------------- */
-function showSection(id){
-
-document.getElementById("products").style.display="none";
-document.getElementById("cart").style.display="none";
-document.getElementById("orders").style.display="none";
+products.style.display="none";
+cart.style.display="none";
+orders.style.display="none";
 
 document.getElementById(id).style.display="block";
+
+}
+
+/* ---------------- LOGIN ---------------- */
+function login(){
+
+fetch("/api/login",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+username:user.value,
+password:pass.value
+})
+})
+
+.then(r=>r.json())
+.then(d=>{
+
+msg.innerText=d.message;
+
+if(d.success){
+admin.style.display="block";
+}
+
+});
 
 }
 
@@ -122,10 +178,11 @@ function loadProducts(){
 fetch("/api/products")
 .then(r=>r.json())
 .then(data=>{
+
 allProducts=data;
 renderProducts(data);
-})
-.catch(err=>console.log(err));
+
+});
 
 }
 
@@ -140,14 +197,14 @@ html+=`
 <div class="card">
 
 <img src="${p.image}" 
-onerror="this.src='https://via.placeholder.com/200'">
+onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
 
 <h3>${p.name}</h3>
 <p>${p.description}</p>
 
 <b>Rs ${p.price}</b><br>
 
-<button onclick="addToCart('${p.name}',${p.price},'${p.image}')">
+<button onclick="addToCart('${p.name}', ${p.price})">
 Add to Cart
 </button>
 
@@ -156,14 +213,14 @@ Add to Cart
 
 });
 
-document.getElementById("products").innerHTML = html;
+products.innerHTML=html;
 
 }
 
 /* ---------------- SEARCH ---------------- */
 function searchProduct(){
 
-let key=document.getElementById("search").value.toLowerCase();
+let key=search.value.toLowerCase();
 
 let filtered=allProducts.filter(p=>
 p.name.toLowerCase().includes(key)
@@ -174,17 +231,16 @@ renderProducts(filtered);
 }
 
 /* ---------------- ADD TO CART ---------------- */
-function addToCart(name,price,image){
+function addToCart(name,price){
 
 fetch("/api/cart",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
-body:JSON.stringify({name,price,image})
+body:JSON.stringify({name,price})
 })
+
 .then(r=>r.json())
-.then(()=>{
-loadCart();
-});
+.then(()=>loadCart());
 
 }
 
@@ -199,7 +255,7 @@ let html="";
 let total=0;
 
 if(data.length===0){
-html="<p>Cart is empty</p>";
+html="<p>Cart Empty</p>";
 }
 
 data.forEach(c=>{
@@ -209,16 +265,17 @@ total += c.quantity * c.price;
 html+=`
 <div class="card">
 
-<img src="${c.image}" 
-onerror="this.src='https://via.placeholder.com/200'">
-
 <h3>${c.product_name}</h3>
 
-<button onclick="changeQty(${c.id},${c.quantity-1})">-</button>
-<b>${c.quantity}</b>
-<button onclick="changeQty(${c.id},${c.quantity+1})">+</button>
+<button class="qty-btn"
+onclick="changeQty(${c.id},${c.quantity-1})">-</button>
 
-<p>Rs ${c.price}</p>
+<b>${c.quantity}</b>
+
+<button class="qty-btn"
+onclick="changeQty(${c.id},${c.quantity+1})">+</button>
+
+<p>Price: Rs ${c.price}</p>
 
 <button onclick="removeItem(${c.id})">Remove</button>
 
@@ -232,14 +289,13 @@ html+=`
 <button onclick="checkout()">Checkout</button>
 `;
 
-document.getElementById("cart").innerHTML = html;
+cart.innerHTML=html;
 
-})
-.catch(err=>console.log(err));
+});
 
 }
 
-/* ---------------- QTY ---------------- */
+/* ---------------- QTY CHANGE ---------------- */
 function changeQty(id,qty){
 
 if(qty<=0){
@@ -275,6 +331,59 @@ loadCart();
 });
 
 }
+
+/* ---------------- ORDERS ---------------- */
+function loadOrders(){
+
+fetch("/api/orders")
+.then(r=>r.json())
+.then(data=>{
+
+let html="";
+
+if(data.length===0){
+html="<p>No Orders</p>";
+}
+
+data.forEach(o=>{
+html+=`
+<div class="card">
+📦 ${o.product_name} (Qty: ${o.quantity})
+</div>
+`;
+});
+
+orders.innerHTML=html;
+
+});
+
+}
+
+/* ---------------- ADD PRODUCT ---------------- */
+function addProduct(){
+
+fetch("/api/add_product",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+name:pname.value,
+description:pdesc.value,
+price:pprice.value,
+image:pimg.value
+})
+})
+.then(()=>loadProducts());
+
+}
+
+/* ---------------- LOGOUT ---------------- */
+function logout(){
+admin.style.display="none";
+}
+
+/* ---------------- INIT ---------------- */
+loadProducts();
+loadCart();
 
 </script>
 
