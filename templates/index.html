@@ -65,14 +65,17 @@ border-radius:10px;
 input{
 padding:8px;
 margin:5px;
+width:200px;
 }
 
-button{
-cursor:pointer;
-}
-
-button:hover{
-opacity:0.85;
+/* ADMIN PANEL */
+#adminPanel{
+display:none;
+background:#fff;
+padding:15px;
+margin:20px;
+border-radius:10px;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
 }
 </style>
 
@@ -103,6 +106,18 @@ opacity:0.85;
 <p id="msg"></p>
 </div>
 
+<!-- ADMIN PANEL (ADD PRODUCT) -->
+<div id="adminPanel">
+<h2>➕ Add Product</h2>
+
+<input id="pname" placeholder="Product Name"><br>
+<input id="pdesc" placeholder="Description"><br>
+<input id="pprice" placeholder="Price"><br>
+<input id="pimage" placeholder="Image URL"><br>
+
+<button onclick="addProduct()">Add Product</button>
+</div>
+
 <!-- PRODUCTS -->
 <div id="products" class="section"></div>
 
@@ -116,16 +131,16 @@ opacity:0.85;
 
 let allProducts = [];
 
-/* ---------------- NAVIGATION ---------------- */
+/* ---------------- NAV ---------------- */
 function show(id){
 document.querySelectorAll(".section").forEach(s=>{
 s.classList.remove("active");
 });
 document.getElementById(id).classList.add("active");
 
-if(id === "products") loadProducts();
-if(id === "cart") loadCart();
-if(id === "orders") loadOrders();
+if(id==="products") loadProducts();
+if(id==="cart") loadCart();
+if(id==="orders") loadOrders();
 }
 
 /* ---------------- LOGIN ---------------- */
@@ -144,6 +159,7 @@ password:pass.value
 msg.innerText = d.message;
 
 if(d.success){
+document.getElementById("adminPanel").style.display = "block";
 show("products");
 loadProducts();
 }
@@ -163,7 +179,7 @@ renderProducts(data);
 
 function renderProducts(data){
 
-let html = "";
+let html="";
 
 data.forEach(p=>{
 
@@ -194,30 +210,53 @@ Delete
 document.getElementById("products").innerHTML = html;
 }
 
-/* ---------------- ADD TO CART ---------------- */
-function addToCart(name, price, image){
+/* ---------------- ADD PRODUCT ---------------- */
+function addProduct(){
+
+fetch("/api/add_product",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+name:pname.value,
+description:pdesc.value,
+price:pprice.value,
+image:pimage.value
+})
+})
+.then(r=>r.json())
+.then(d=>{
+alert(d.message);
+loadProducts();
+});
+}
+
+/* ---------------- DELETE PRODUCT ---------------- */
+function deleteProduct(id){
+
+fetch("/api/delete_product/"+id,{method:"DELETE"})
+.then(()=>loadProducts());
+
+}
+
+/* ---------------- CART ---------------- */
+function addToCart(name,price,image){
 
 fetch("/api/cart",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
-body:JSON.stringify({name, price, image})
+body:JSON.stringify({name,price,image})
 })
 .then(()=>loadCart());
 }
 
-/* ---------------- CART ---------------- */
 function loadCart(){
 
 fetch("/api/cart")
 .then(r=>r.json())
 .then(data=>{
 
-let html = "";
-let total = 0;
-
-if(data.length === 0){
-html = "<p>Cart is empty</p>";
-}
+let html="";
+let total=0;
 
 data.forEach(c=>{
 total += c.quantity * c.price;
@@ -225,14 +264,13 @@ total += c.quantity * c.price;
 html += `
 <div class="card">
 
-<img src="${c.image}"
-onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
+<img src="${c.image}">
 
 <h3>${c.product_name}</h3>
 
-<button onclick="changeQty(${c.id}, ${c.quantity-1})">-</button>
+<button onclick="changeQty(${c.id},${c.quantity-1})">-</button>
 <b>${c.quantity}</b>
-<button onclick="changeQty(${c.id}, ${c.quantity+1})">+</button>
+<button onclick="changeQty(${c.id},${c.quantity+1})">+</button>
 
 <p>Rs ${c.price}</p>
 
@@ -252,43 +290,19 @@ document.getElementById("cart").innerHTML = html;
 });
 }
 
-/* ---------------- QTY UPDATE ---------------- */
-function changeQty(id, qty){
+function changeQty(id,qty){
 
 fetch("/api/cart/update",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
-body:JSON.stringify({id, quantity:qty})
+body:JSON.stringify({id,quantity:qty})
 })
 .then(()=>loadCart());
 }
 
-/* ---------------- DELETE CART ITEM ---------------- */
 function removeItem(id){
-
-fetch("/api/cart/"+id, {method:"DELETE"})
+fetch("/api/cart/"+id,{method:"DELETE"})
 .then(()=>loadCart());
-
-}
-
-/* ---------------- DELETE PRODUCT ---------------- */
-function deleteProduct(id){
-
-fetch("/api/delete_product/"+id, {method:"DELETE"})
-.then(()=>loadProducts());
-
-}
-
-/* ---------------- CHECKOUT ---------------- */
-function checkout(){
-
-fetch("/api/checkout",{method:"POST"})
-.then(r=>r.json())
-.then(d=>{
-alert(d.message);
-loadCart();
-});
-
 }
 
 /* ---------------- ORDERS ---------------- */
@@ -298,18 +312,13 @@ fetch("/api/orders")
 .then(r=>r.json())
 .then(data=>{
 
-let html = "";
-
-if(data.length === 0){
-html = "<p>No orders yet</p>";
-}
+let html="";
 
 data.forEach(o=>{
 html += `
 <div class="card">
 
-<img src="${o.image}"
-onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
+<img src="${o.image}">
 
 <h3>${o.product_name}</h3>
 <p>Qty: ${o.quantity}</p>
@@ -322,6 +331,18 @@ onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
 document.getElementById("orders").innerHTML = html;
 
 });
+}
+
+/* ---------------- CHECKOUT ---------------- */
+function checkout(){
+
+fetch("/api/checkout",{method:"POST"})
+.then(r=>r.json())
+.then(d=>{
+alert(d.message);
+loadCart();
+});
+
 }
 
 /* INIT */
