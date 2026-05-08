@@ -11,11 +11,13 @@ font-family:Arial;
 background:#eef2f7;
 }
 
+/* NAVBAR */
 .navbar{
 background:#1e293b;
 color:white;
 display:flex;
 justify-content:space-between;
+align-items:center;
 padding:15px;
 flex-wrap:wrap;
 }
@@ -30,6 +32,7 @@ border-radius:5px;
 cursor:pointer;
 }
 
+/* SECTIONS */
 .section{
 padding:20px;
 display:none;
@@ -39,6 +42,7 @@ display:none;
 display:block;
 }
 
+/* CARDS */
 .card{
 background:white;
 padding:15px;
@@ -57,9 +61,14 @@ object-fit:cover;
 border-radius:10px;
 }
 
+/* INPUT */
 input{
 padding:8px;
 margin:5px;
+}
+
+button:hover{
+opacity:0.85;
 }
 </style>
 </head>
@@ -73,6 +82,7 @@ margin:5px;
 <div>
 <button onclick="show('products')">Products</button>
 <button onclick="show('cart')">Cart</button>
+<button onclick="show('orders')">Orders</button>
 <button onclick="show('login')">Login</button>
 </div>
 </div>
@@ -111,11 +121,14 @@ margin:5px;
 <!-- CART -->
 <div id="cart" class="section"></div>
 
+<!-- ORDERS -->
+<div id="orders" class="section"></div>
+
 <script>
 
 let allProducts = [];
 
-/* ---------------- SHOW SECTION ---------------- */
+/* ---------------- NAVIGATION ---------------- */
 function show(id){
 
 document.querySelectorAll(".section").forEach(s=>{
@@ -126,6 +139,7 @@ document.getElementById(id).classList.add("active");
 
 if(id==="products") loadProducts();
 if(id==="cart") loadCart();
+if(id==="orders") loadOrders();
 
 }
 
@@ -151,7 +165,7 @@ alert("Login Success");
 // SHOW ADMIN PANEL
 document.getElementById("adminPanel").style.display="block";
 
-// AUTO GO TO PRODUCTS
+// GO TO PRODUCTS
 show("products");
 loadProducts();
 }
@@ -181,7 +195,7 @@ loadProducts();
 
 }
 
-/* ---------------- LOAD PRODUCTS ---------------- */
+/* ---------------- PRODUCTS ---------------- */
 function loadProducts(){
 
 fetch("/api/products")
@@ -259,6 +273,8 @@ html+=`
 
 <p>Rs ${c.price}</p>
 
+<button onclick="removeItem(${c.id})">Remove</button>
+
 </div>
 `;
 
@@ -284,6 +300,45 @@ headers:{"Content-Type":"application/json"},
 body:JSON.stringify({id,quantity:qty})
 })
 .then(()=>loadCart());
+
+}
+
+/* ---------------- DELETE ---------------- */
+function removeItem(id){
+
+fetch("/api/cart/"+id,{method:"DELETE"})
+.then(()=>loadCart());
+
+}
+
+/* ---------------- ORDERS ---------------- */
+function loadOrders(){
+
+fetch("/api/orders")
+.then(r=>r.json())
+.then(data=>{
+
+let html="";
+
+data.forEach(o=>{
+
+html+=`
+<div class="card">
+
+<img src="${o.image}">
+
+<h3>${o.product_name}</h3>
+<p>Qty: ${o.quantity}</p>
+<p>Rs ${o.price}</p>
+
+</div>
+`;
+
+});
+
+document.getElementById("orders").innerHTML=html;
+
+});
 
 }
 

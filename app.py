@@ -74,10 +74,10 @@ def init_db():
 def login():
     data = request.get_json()
 
-    if data.get("username") == "admin" and data.get("password") == "1234":
+    if data["username"] == "admin" and data["password"] == "1234":
         return jsonify({"success": True, "message": "Login success"})
 
-    return jsonify({"success": False, "message": "Invalid"})
+    return jsonify({"success": False, "message": "Invalid credentials"})
 
 
 # ---------------- PRODUCTS ----------------
@@ -102,12 +102,7 @@ def add_product():
     cursor.execute("""
     INSERT INTO Products (name, description, price, image)
     VALUES (?, ?, ?, ?)
-    """, (
-        data["name"],
-        data["description"],
-        data["price"],
-        data["image"]
-    ))
+    """, (data["name"], data["description"], data["price"], data["image"]))
 
     conn.commit()
     conn.close()
@@ -115,7 +110,7 @@ def add_product():
     return jsonify({"message": "Product added"})
 
 
-# ---------------- ADD TO CART ----------------
+# ---------------- CART ----------------
 @app.route("/api/cart", methods=["POST"])
 def add_cart():
     data = request.get_json()
@@ -176,7 +171,7 @@ def update_cart():
     return jsonify({"message": "Updated"})
 
 
-# ---------------- DELETE ----------------
+# ---------------- DELETE ITEM ----------------
 @app.route("/api/cart/<int:id>", methods=["DELETE"])
 def delete_item(id):
     conn = get_db()
@@ -207,7 +202,7 @@ def checkout():
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Order placed"})
+    return jsonify({"message": "Order placed successfully"})
 
 
 # ---------------- ORDERS ----------------
@@ -221,14 +216,9 @@ def orders():
     return jsonify([dict(row) for row in data])
 
 
-# ---------------- RUN (RENDER FIX) ----------------
+# ---------------- RUN ----------------
 if __name__ == "__main__":
     init_db()
 
     port = int(os.environ.get("PORT", 10000))
-
-    app.run(
-        host="0.0.0.0",
-        port=port,
-        debug=False
-    )
+    app.run(host="0.0.0.0", port=port, debug=False)
