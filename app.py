@@ -25,6 +25,14 @@ def init_db():
     cursor = conn.cursor()
 
     cursor.execute("""
+    CREATE TABLE IF NOT EXISTS Users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        password TEXT
+    )
+    """)
+
+    cursor.execute("""
     CREATE TABLE IF NOT EXISTS Products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
@@ -54,15 +62,26 @@ def init_db():
     )
     """)
 
+    # default admin
+    cursor.execute("SELECT COUNT(*) FROM Users")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("INSERT INTO Users (username, password) VALUES (?, ?)", ("admin", "1234"))
+
+    # sample products
     cursor.execute("SELECT COUNT(*) FROM Products")
     if cursor.fetchone()[0] == 0:
         cursor.executemany("""
         INSERT INTO Products (name, description, price, image)
         VALUES (?, ?, ?, ?)
         """, [
-            ("Laptop", "Core i5 8GB RAM", 75000, "https://via.placeholder.com/200"),
-            ("Mobile", "128GB Storage", 45000, "https://via.placeholder.com/200"),
-            ("Headphones", "Wireless", 5000, "https://via.placeholder.com/200")
+            ("Laptop", "Core i5 8GB RAM", 75000,
+             "https://tse1.mm.bing.net/th/id/OIP.cmduKem40PZuDvLCz22rqQHaFU?pid=Api&h=220&P=0"),
+
+            ("Mobile", "128GB Storage", 45000,
+             "https://tse2.mm.bing.net/th/id/OIP.wk1TPiu8l6DXL27GPTYLdwAAAA?pid=Api&h=220&P=0"),
+
+            ("Headphones", "Wireless", 5000,
+             "https://tse3.mm.bing.net/th/id/OIP.pgzU33CxcqL3NvDutVnJTgHaI0?pid=Api&h=220&P=0")
         ])
 
     conn.commit()
@@ -73,11 +92,18 @@ def init_db():
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
+    conn = get_db()
+    cursor = conn.cursor()
 
-    if data["username"] == "admin" and data["password"] == "1234":
+    cursor.execute("SELECT * FROM Users WHERE username=? AND password=?",
+                   (data["username"], data["password"]))
+
+    user = cursor.fetchone()
+    conn.close()
+
+    if user:
         return jsonify({"success": True, "message": "Login success"})
-
-    return jsonify({"success": False, "message": "Invalid credentials"})
+    return jsonify({"success": False, "message": "Invalid login"})
 
 
 # ---------------- PRODUCTS ----------------
@@ -110,6 +136,20 @@ def add_product():
     return jsonify({"message": "Product added"})
 
 
+# ---------------- DELETE PRODUCT ----------------
+@app.route("/api/delete_product/<int:id>", methods=["DELETE"])
+def delete_product(id):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM Products WHERE id=?", (id,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "Product deleted"})
+
+
 # ---------------- CART ----------------
 @app.route("/api/cart", methods=["POST"])
 def add_cart():
@@ -122,10 +162,7 @@ def add_cart():
     item = cursor.fetchone()
 
     if item:
-        cursor.execute("""
-        UPDATE Cart SET quantity = quantity + 1
-        WHERE id=?
-        """, (item["id"],))
+        cursor.execute("UPDATE Cart SET quantity = quantity + 1 WHERE id=?", (item["id"],))
     else:
         cursor.execute("""
         INSERT INTO Cart (product_name, quantity, price, image)
@@ -160,10 +197,8 @@ def update_cart():
     if data["quantity"] <= 0:
         cursor.execute("DELETE FROM Cart WHERE id=?", (data["id"],))
     else:
-        cursor.execute("""
-        UPDATE Cart SET quantity=?
-        WHERE id=?
-        """, (data["quantity"], data["id"]))
+        cursor.execute("UPDATE Cart SET quantity=? WHERE id=?",
+                       (data["quantity"], data["id"]))
 
     conn.commit()
     conn.close()
@@ -171,14 +206,17 @@ def update_cart():
     return jsonify({"message": "Updated"})
 
 
-# ---------------- DELETE ITEM ----------------
+# ---------------- DELETE CART ITEM ----------------
 @app.route("/api/cart/<int:id>", methods=["DELETE"])
-def delete_item(id):
+def delete_cart(id):
     conn = get_db()
     cursor = conn.cursor()
+
     cursor.execute("DELETE FROM Cart WHERE id=?", (id,))
+
     conn.commit()
     conn.close()
+
     return jsonify({"message": "Deleted"})
 
 
@@ -202,7 +240,7 @@ def checkout():
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Order placed successfully"})
+    return jsonify({"message": "Order placed"})
 
 
 # ---------------- ORDERS ----------------
@@ -210,9 +248,12 @@ def checkout():
 def orders():
     conn = get_db()
     cursor = conn.cursor()
+
     cursor.execute("SELECT * FROM Orders")
     data = cursor.fetchall()
+
     conn.close()
+
     return jsonify([dict(row) for row in data])
 
 
