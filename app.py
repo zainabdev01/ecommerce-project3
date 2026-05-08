@@ -1,11 +1,13 @@
+
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import sqlite3
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-# ---------------- DB ----------------
+# ---------------- DATABASE ----------------
 def get_db():
     conn = sqlite3.connect("ecommerce.db")
     conn.row_factory = sqlite3.Row
@@ -23,6 +25,7 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
 
+    # PRODUCTS
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,6 +36,7 @@ def init_db():
     )
     """)
 
+    # CART (with price FIXED)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Cart (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,6 +46,7 @@ def init_db():
     )
     """)
 
+    # ORDERS
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS Orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,6 +56,7 @@ def init_db():
     )
     """)
 
+    # SAMPLE DATA
     cursor.execute("SELECT COUNT(*) FROM Products")
     if cursor.fetchone()[0] == 0:
         cursor.executemany("""
@@ -59,7 +65,7 @@ def init_db():
         """, [
             ("Laptop", "Core i5 8GB RAM", 75000, "https://via.placeholder.com/200"),
             ("Mobile", "128GB Storage", 45000, "https://via.placeholder.com/200"),
-            ("Headphones", "Wireless", 5000, "https://via.placeholder.com/200")
+            ("Headphones", "Wireless Headphones", 5000, "https://via.placeholder.com/200")
         ])
 
     conn.commit()
@@ -72,9 +78,9 @@ def login():
     data = request.get_json()
 
     if data.get("username") == "admin" and data.get("password") == "1234":
-        return jsonify({"success": True, "message": "Login success"})
+        return jsonify({"success": True, "message": "Login successful"})
 
-    return jsonify({"success": False, "message": "Invalid"})
+    return jsonify({"success": False, "message": "Invalid credentials"})
 
 
 # ---------------- PRODUCTS ----------------
@@ -86,6 +92,30 @@ def products():
     data = cursor.fetchall()
     conn.close()
     return jsonify([dict(row) for row in data])
+
+
+# ---------------- ADD PRODUCT ----------------
+@app.route("/api/add_product", methods=["POST"])
+def add_product():
+    data = request.get_json()
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    INSERT INTO Products (name, description, price, image)
+    VALUES (?, ?, ?, ?)
+    """, (
+        data.get("name"),
+        data.get("description"),
+        data.get("price"),
+        data.get("image")
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "Product added"})
 
 
 # ---------------- ADD TO CART ----------------
@@ -113,7 +143,7 @@ def add_cart():
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Added"})
+    return jsonify({"message": "Added to cart"})
 
 
 # ---------------- GET CART ----------------
@@ -146,7 +176,7 @@ def update_cart():
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Updated"})
+    return jsonify({"message": "Cart updated"})
 
 
 # ---------------- DELETE ITEM ----------------
@@ -194,7 +224,14 @@ def orders():
     return jsonify([dict(row) for row in data])
 
 
-# ---------------- RUN ----------------
+# ---------------- RUN (RENDER FIXED) ----------------
 if __name__ == "__main__":
     init_db()
-    app.run(debug=True)
+
+    port = int(os.environ.get("PORT", 10000))
+
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=False
+    )
