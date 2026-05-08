@@ -8,18 +8,26 @@
 body{
 margin:0;
 font-family:Arial;
-background:#f3f4f6;
+background:#f5f6fa;
 }
 
 /* NAVBAR */
 .navbar{
-background:#111827;
+background:#0f172a;
 color:white;
 display:flex;
 justify-content:space-between;
-padding:15px;
 align-items:center;
+padding:15px 20px;
 flex-wrap:wrap;
+}
+
+.navbar input{
+padding:8px;
+width:250px;
+border:none;
+border-radius:6px;
+outline:none;
 }
 
 .navbar button{
@@ -42,33 +50,74 @@ display:none;
 display:block;
 }
 
+/* GRID */
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:20px;
+}
+
 /* CARD */
 .card{
 background:white;
-padding:15px;
-margin:10px;
 border-radius:12px;
-width:220px;
-display:inline-block;
+overflow:hidden;
 box-shadow:0 4px 10px rgba(0,0,0,0.1);
-vertical-align:top;
+transition:0.3s;
+}
+
+.card:hover{
+transform:scale(1.03);
 }
 
 .card img{
 width:100%;
 height:180px;
 object-fit:cover;
-border-radius:10px;
 }
 
-/* ADMIN PANEL */
+.card-body{
+padding:10px;
+}
+
+.card button{
+width:100%;
+margin-top:5px;
+padding:8px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+.add-btn{
+background:#22c55e;
+color:white;
+}
+
+.del-btn{
+background:#ef4444;
+color:white;
+}
+
+/* CART */
+.cart-item{
+background:white;
+padding:12px;
+margin:10px 0;
+border-radius:10px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+/* ADMIN */
 #adminPanel{
 display:none;
 background:white;
 padding:15px;
 margin:20px;
 border-radius:10px;
-box-shadow:0 2px 8px rgba(0,0,0,0.1);
+box-shadow:0 2px 10px rgba(0,0,0,0.1);
 }
 </style>
 </head>
@@ -98,9 +147,9 @@ box-shadow:0 2px 8px rgba(0,0,0,0.1);
 <p id="msg"></p>
 </div>
 
-<!-- ADMIN PANEL (ONLY ADMIN SEES THIS) -->
+<!-- ADMIN PANEL -->
 <div id="adminPanel">
-<h2>➕ Add Product (Admin Only)</h2>
+<h2>➕ Add Product (Admin)</h2>
 
 <input id="pname" placeholder="Name"><br>
 <input id="pdesc" placeholder="Description"><br>
@@ -121,14 +170,12 @@ box-shadow:0 2px 8px rgba(0,0,0,0.1);
 
 <script>
 
-let allProducts = [];
-let isAdmin = false;   // 🔥 ROLE FLAG
+let allProducts=[];
+let isAdmin=false;
 
-/* ---------------- SHOW SECTIONS ---------------- */
+/* NAVIGATION */
 function show(id){
-document.querySelectorAll(".section").forEach(s=>{
-s.classList.remove("active");
-});
+document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
 document.getElementById(id).classList.add("active");
 
 if(id==="products") loadProducts();
@@ -136,7 +183,7 @@ if(id==="cart") loadCart();
 if(id==="orders") loadOrders();
 }
 
-/* ---------------- LOGIN ---------------- */
+/* LOGIN */
 function login(){
 
 fetch("/api/login",{
@@ -150,79 +197,80 @@ password:pass.value
 .then(r=>r.json())
 .then(d=>{
 
-msg.innerText = d.message;
+msg.innerText=d.message;
 
 if(d.success){
-
-isAdmin = true;  // 🔥 ADMIN MODE ON
-
-document.getElementById("adminPanel").style.display = "block";
-
+isAdmin=true;
+document.getElementById("adminPanel").style.display="block";
 show("products");
 loadProducts();
-
 }
 });
 }
 
-/* ---------------- LOGOUT ---------------- */
+/* LOGOUT */
 function logout(){
-isAdmin = false;
-document.getElementById("adminPanel").style.display = "none";
+isAdmin=false;
+document.getElementById("adminPanel").style.display="none";
 show("login");
 }
 
-/* ---------------- PRODUCTS ---------------- */
+/* PRODUCTS */
 function loadProducts(){
 
 fetch("/api/products")
 .then(r=>r.json())
 .then(data=>{
-allProducts = data;
+allProducts=data;
 renderProducts(data);
 });
 }
 
 function renderProducts(data){
 
-let html = "";
+let html=`<div class="grid">`;
 
 data.forEach(p=>{
 
-html += `
+html+=`
 <div class="card">
 
 <img src="${p.image}"
 onerror="this.src='https://via.placeholder.com/200'">
 
+<div class="card-body">
+
 <h3>${p.name}</h3>
 <p>${p.description}</p>
+<b>Rs ${p.price}</b>
 
-<b>Rs ${p.price}</b><br><br>
-
-<button onclick="addToCart('${p.name}',${p.price},'${p.image}')">
+<button class="add-btn"
+onclick="addToCart('${p.name}',${p.price},'${p.image}')">
 Add to Cart
 </button>
 `;
 
-
-// 🔥 ONLY ADMIN CAN SEE DELETE BUTTON
 if(isAdmin){
-html += `
-<button style="background:red;color:white"
+html+=`
+<button class="del-btn"
 onclick="deleteProduct(${p.id})">
 Delete
 </button>
 `;
 }
 
-html += `</div>`;
+html+=`
+</div>
+</div>
+`;
 });
 
-document.getElementById("products").innerHTML = html;
+html+=`</div>`;
+
+document.getElementById("products").innerHTML=html;
 }
 
-/* ---------------- ADD PRODUCT ---------------- */
+/* ADD PRODUCT */
 function addProduct(){
 
 fetch("/api/add_product",{
@@ -242,18 +290,13 @@ loadProducts();
 });
 }
 
-/* ---------------- DELETE PRODUCT (ADMIN ONLY) ---------------- */
+/* DELETE PRODUCT */
 function deleteProduct(id){
-
-if(!isAdmin) return;
-
-fetch("/api/delete_product/"+id,{
-method:"DELETE"
-})
+fetch("/api/delete_product/"+id,{method:"DELETE"})
 .then(()=>loadProducts());
 }
 
-/* ---------------- CART ---------------- */
+/* CART */
 function addToCart(name,price,image){
 
 fetch("/api/cart",{
@@ -274,40 +317,39 @@ let html="";
 let total=0;
 
 data.forEach(c=>{
-total += c.quantity * c.price;
+total+=c.quantity*c.price;
 
-html += `
-<div class="card">
+html+=`
+<div class="cart-item">
 
-<img src="${c.image}">
+<div>
+<b>${c.product_name}</b><br>
+Rs ${c.price}
+</div>
 
-<h3>${c.product_name}</h3>
-
+<div>
 <button onclick="changeQty(${c.id},${c.quantity-1})">-</button>
 <b>${c.quantity}</b>
 <button onclick="changeQty(${c.id},${c.quantity+1})">+</button>
+</div>
 
-<p>Rs ${c.price}</p>
-
-<button onclick="removeItem(${c.id})">Remove</button>
+<button onclick="removeItem(${c.id})">❌</button>
 
 </div>
 `;
 });
 
-html += `
+html+=`
 <h2>Total: Rs ${total}</h2>
 <button onclick="checkout()">Checkout</button>
 `;
 
-document.getElementById("cart").innerHTML = html;
+document.getElementById("cart").innerHTML=html;
 
 });
 }
 
-/* ---------------- CART UPDATE ---------------- */
 function changeQty(id,qty){
-
 fetch("/api/cart/update",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
@@ -321,7 +363,7 @@ fetch("/api/cart/"+id,{method:"DELETE"})
 .then(()=>loadCart());
 }
 
-/* ---------------- ORDERS ---------------- */
+/* ORDERS */
 function loadOrders(){
 
 fetch("/api/orders")
@@ -331,11 +373,10 @@ fetch("/api/orders")
 let html="";
 
 data.forEach(o=>{
-html += `
+html+=`
 <div class="card">
 
 <img src="${o.image}">
-
 <h3>${o.product_name}</h3>
 <p>Qty: ${o.quantity}</p>
 <p>Rs ${o.price}</p>
@@ -344,21 +385,19 @@ html += `
 `;
 });
 
-document.getElementById("orders").innerHTML = html;
+document.getElementById("orders").innerHTML=html;
 
 });
 }
 
-/* ---------------- CHECKOUT ---------------- */
+/* CHECKOUT */
 function checkout(){
-
 fetch("/api/checkout",{method:"POST"})
 .then(r=>r.json())
 .then(d=>{
 alert(d.message);
 loadCart();
 });
-
 }
 
 /* INIT */
