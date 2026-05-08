@@ -1,192 +1,18 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>MyStore</title>
-
-<style>
-
-body{
-margin:0;
-font-family:Arial;
-background:#eef2f7;
-}
-
-/* NAVBAR */
-.navbar{
-background:#1e293b;
-color:white;
-display:flex;
-justify-content:space-between;
-padding:15px 30px;
-flex-wrap:wrap;
-align-items:center;
-}
-
-.navbar input{
-padding:8px;
-border:none;
-border-radius:6px;
-outline:none;
-}
-
-.navbar button{
-background:#3b82f6;
-border:none;
-color:white;
-padding:8px 12px;
-margin-left:8px;
-border-radius:6px;
-cursor:pointer;
-}
-
-/* SECTION */
-.section{
-padding:20px;
-}
-
-/* CARD */
-.card{
-background:white;
-padding:15px;
-margin:10px;
-border-radius:10px;
-box-shadow:0 3px 8px rgba(0,0,0,0.1);
-width:220px;
-display:inline-block;
-vertical-align:top;
-}
-
-.card img{
-width:100%;
-height:180px;
-object-fit:cover;
-border-radius:10px;
-}
-
-/* BUTTONS */
-button{
-cursor:pointer;
-}
-
-.qty-btn{
-padding:5px 10px;
-margin:5px;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<!-- NAVBAR -->
-<div class="navbar">
-
-<h2>🛒 MyStore</h2>
-
-<div>
-<input id="search" placeholder="Search..." onkeyup="searchProduct()">
-
-<button onclick="show('products')">Products</button>
-<button onclick="show('cart')">Cart</button>
-<button onclick="show('orders')">Orders</button>
-</div>
-
-</div>
-
-<!-- LOGIN -->
-<div class="section">
-
-<input id="user" placeholder="Username">
-<input id="pass" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
-<p id="msg"></p>
-
-</div>
-
-<!-- PRODUCTS -->
-<div id="products" class="section"></div>
-
-<!-- CART -->
-<div id="cart" class="section" style="display:none;">
-<h2>Cart</h2>
-</div>
-
-<!-- ORDERS -->
-<div id="orders" class="section" style="display:none;">
-<h2>Orders</h2>
-</div>
-
-<!-- ADMIN -->
-<div id="admin" class="section" style="display:none;">
-<h3>Admin Panel</h3>
-
-<input id="pname" placeholder="Name">
-<input id="pdesc" placeholder="Desc">
-<input id="pprice" placeholder="Price">
-<input id="pimg" placeholder="Image URL">
-
-<button onclick="addProduct()">Add Product</button>
-<button onclick="logout()">Logout</button>
-
-</div>
-
 <script>
 
 let allProducts=[];
 
-/* ---------------- SHOW SECTION ---------------- */
-function show(id){
-
-products.style.display="none";
-cart.style.display="none";
-orders.style.display="none";
-
-document.getElementById(id).style.display="block";
-
-}
-
-/* ---------------- LOGIN ---------------- */
-function login(){
-
-fetch("/api/login",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-username:user.value,
-password:pass.value
-})
-})
-
-.then(r=>r.json())
-.then(d=>{
-
-msg.innerText=d.message;
-
-if(d.success){
-admin.style.display="block";
-}
-
-});
-
-}
-
 /* ---------------- LOAD PRODUCTS ---------------- */
 function loadProducts(){
-
 fetch("/api/products")
 .then(r=>r.json())
 .then(data=>{
-
 allProducts=data;
 renderProducts(data);
-
 });
-
 }
 
-/* ---------------- RENDER PRODUCTS ---------------- */
+/* ---------------- DISPLAY PRODUCTS ---------------- */
 function renderProducts(data){
 
 let html="";
@@ -204,7 +30,7 @@ onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
 
 <b>Rs ${p.price}</b><br>
 
-<button onclick="addToCart('${p.name}', ${p.price})">
+<button onclick="addToCart('${p.name}', ${p.price}, '${p.image}')">
 Add to Cart
 </button>
 
@@ -217,30 +43,19 @@ products.innerHTML=html;
 
 }
 
-/* ---------------- SEARCH ---------------- */
-function searchProduct(){
-
-let key=search.value.toLowerCase();
-
-let filtered=allProducts.filter(p=>
-p.name.toLowerCase().includes(key)
-);
-
-renderProducts(filtered);
-
-}
-
 /* ---------------- ADD TO CART ---------------- */
-function addToCart(name,price){
+function addToCart(name, price, image){
 
 fetch("/api/cart",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
-body:JSON.stringify({name,price})
+body:JSON.stringify({name, price, image})
 })
-
 .then(r=>r.json())
-.then(()=>loadCart());
+.then(d=>{
+alert(d.message);
+loadCart();
+});
 
 }
 
@@ -265,15 +80,14 @@ total += c.quantity * c.price;
 html+=`
 <div class="card">
 
+<img src="${c.image}" 
+onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
+
 <h3>${c.product_name}</h3>
 
-<button class="qty-btn"
-onclick="changeQty(${c.id},${c.quantity-1})">-</button>
-
+<button onclick="changeQty(${c.id},${c.quantity-1})">-</button>
 <b>${c.quantity}</b>
-
-<button class="qty-btn"
-onclick="changeQty(${c.id},${c.quantity+1})">+</button>
+<button onclick="changeQty(${c.id},${c.quantity+1})">+</button>
 
 <p>Price: Rs ${c.price}</p>
 
@@ -284,10 +98,8 @@ onclick="changeQty(${c.id},${c.quantity+1})">+</button>
 
 });
 
-html+=`
-<h2>Total: Rs ${total}</h2>
-<button onclick="checkout()">Checkout</button>
-`;
+html+=`<h2>Total: Rs ${total}</h2>
+<button onclick="checkout()">Checkout</button>`;
 
 cart.innerHTML=html;
 
@@ -295,7 +107,7 @@ cart.innerHTML=html;
 
 }
 
-/* ---------------- QTY CHANGE ---------------- */
+/* ---------------- UPDATE QTY ---------------- */
 function changeQty(id,qty){
 
 if(qty<=0){
@@ -312,73 +124,20 @@ body:JSON.stringify({id,quantity:qty})
 
 }
 
-/* ---------------- REMOVE ---------------- */
+/* ---------------- REMOVE ITEM ---------------- */
 function removeItem(id){
-
 fetch("/api/cart/"+id,{method:"DELETE"})
 .then(()=>loadCart());
-
 }
 
 /* ---------------- CHECKOUT ---------------- */
 function checkout(){
-
 fetch("/api/checkout",{method:"POST"})
 .then(r=>r.json())
 .then(d=>{
 alert(d.message);
 loadCart();
 });
-
-}
-
-/* ---------------- ORDERS ---------------- */
-function loadOrders(){
-
-fetch("/api/orders")
-.then(r=>r.json())
-.then(data=>{
-
-let html="";
-
-if(data.length===0){
-html="<p>No Orders</p>";
-}
-
-data.forEach(o=>{
-html+=`
-<div class="card">
-📦 ${o.product_name} (Qty: ${o.quantity})
-</div>
-`;
-});
-
-orders.innerHTML=html;
-
-});
-
-}
-
-/* ---------------- ADD PRODUCT ---------------- */
-function addProduct(){
-
-fetch("/api/add_product",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-name:pname.value,
-description:pdesc.value,
-price:pprice.value,
-image:pimg.value
-})
-})
-.then(()=>loadProducts());
-
-}
-
-/* ---------------- LOGOUT ---------------- */
-function logout(){
-admin.style.display="none";
 }
 
 /* ---------------- INIT ---------------- */
@@ -386,6 +145,3 @@ loadProducts();
 loadCart();
 
 </script>
-
-</body>
-</html>
